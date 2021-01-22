@@ -29,6 +29,7 @@ using SanteDB.DisconnectedClient.Services;
 using SanteDB.DisconnectedClient.UI;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -36,6 +37,7 @@ using System.Reflection;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace SanteDB.DisconnectedClient.Win32
 {
@@ -286,7 +288,17 @@ namespace SanteDB.DisconnectedClient.Win32
         /// <summary>Close the applet</summary>
         public void Close()
         {
-            Action doClose = () => { this.m_context.Close(); };
+            Action doClose = () => {
+                try
+                {
+                    Process.Start(Assembly.GetEntryAssembly().Location);
+                    this.m_context.Close();
+                }
+                catch(Exception e)
+                {
+                    MessageBox.Show("Could not automatically stop/start the application - Please close the application and restart");
+                }
+            };
             this.m_context.Invoke(doClose);
         }
 

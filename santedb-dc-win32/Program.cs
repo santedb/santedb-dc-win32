@@ -2,7 +2,9 @@
 using CefSharp.WinForms;
 using MohawkCollege.Util.Console.Parameters;
 using SanteDB.Core.Model.Security;
+using SanteDB.Core.Services;
 using SanteDB.DisconnectedClient.Ags;
+using SanteDB.DisconnectedClient.Data;
 using SanteDB.DisconnectedClient.Security;
 using SanteDB.DisconnectedClient.Services;
 using SanteDB.DisconnectedClient.UI;
@@ -39,7 +41,7 @@ namespace SanteDB.DisconnectedClient.Win32
 
             // Output main header
             var parser = new ParameterParser<ConsoleParameters>();
-            var parms = parser.Parse(args);
+            Parameters = parser.Parse(args);
 
             // Output copyright info
             var entryAsm = Assembly.GetEntryAssembly();
@@ -64,8 +66,8 @@ namespace SanteDB.DisconnectedClient.Win32
                 var applicationIdentity = new SecurityApplication()
                 {
                     Key = Guid.Parse("feeca9f3-805e-4be9-a5c7-30e6e495939b"),
-                    ApplicationSecret = parms.ApplicationSecret ?? "FE78825ADB56401380DBB406411221FD",
-                    Name = parms.ApplicationName ?? "org.santedb.disconnected_client.win32"
+                    ApplicationSecret = Parameters.ApplicationSecret ?? "FE78825ADB56401380DBB406411221FD",
+                    Name = Parameters.ApplicationName ?? "org.santedb.disconnected_client.win32"
                 };
 
                 // Setup basic parameters
@@ -103,9 +105,9 @@ namespace SanteDB.DisconnectedClient.Win32
                 };
 
 
-                if (parms.ShowHelp)
+                if (Parameters.ShowHelp)
                     parser.WriteHelp(Console.Out);
-                else if (parms.Reset && MessageBox.Show("Are you sure you want to wipe all your data and configuration for the Disconnected Client?", "Confirm Reset", MessageBoxButtons.OKCancel) == DialogResult.OK)
+                else if (Parameters.Reset && MessageBox.Show("Are you sure you want to wipe all your data and configuration for the Disconnected Client?", "Confirm Reset", MessageBoxButtons.OKCancel) == DialogResult.OK)
                 {
                     var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SanteDB", "dc-win32");
                     var cData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SanteDB", "dc-win32");
@@ -119,6 +121,21 @@ namespace SanteDB.DisconnectedClient.Win32
 
                     Application.EnableVisualStyles();
                     Application.SetCompatibleTextRenderingDefault(false);
+
+                    var settings = new CefSettings()
+                    {
+                        UserAgent = $"SanteDB-DC",
+                        ExternalMessagePump = false,
+                        MultiThreadedMessageLoop = true,
+                        LogFile = Path.Combine(directory[1], "cef-sdb.log"),
+                        CachePath = Path.Combine(directory[1], ".cache"),
+                        RootCachePath = Path.Combine(directory[1], ".root-cache")
+                    };
+                    CefSharpSettings.WcfEnabled = true;
+                    CefSharpSettings.SubprocessExitIfParentProcessClosed = true;
+                    CefSharpSettings.ShutdownOnExit = true;
+                    Cef.Initialize(settings, performDependencyCheck: true, browserProcessHandler: null);
+                    Cef.EnableHighDPISupport();
 
                     frmDisconnectedClient frmMain = null;
                     frmSplash splash = new frmSplash();
@@ -136,34 +153,29 @@ namespace SanteDB.DisconnectedClient.Win32
                         }
                         else
                         {
-                            var start = DateTime.Now;
-                            var ags = DcApplicationContext.Current.GetService<AgsService>();
-                            while (!ags.IsRunning && DateTime.Now.Subtract(start).TotalSeconds < 20 && splash.Visible)
+                            while (!DcApplicationContext.Current.IsRunning)
                                 Application.DoEvents();
 
-                            if (ags.IsRunning)
-                                frmMain = new frmDisconnectedClient("http://127.0.0.1:9200/");
-                            else return;
+                            frmMain = new frmDisconnectedClient("http://127.0.0.1:9200/");
                         }
                     }
                     else
                     {
-                        var start = DateTime.Now;
-                        var ags = DcApplicationContext.Current.GetService<AgsService>();
-                        while (!ags.IsRunning && DateTime.Now.Subtract(start).TotalSeconds < 20 && splash.Visible)
+                        while (!DcApplicationContext.Current.IsRunning)
                             Application.DoEvents();
 
                         frmMain = new frmDisconnectedClient("http://127.0.0.1:9200/");
                     }
                     splash.Close();
 
+                    
                     Application.Run(frmMain);
 
                 }
             }
             catch (Exception e)
             {
-                MessageBox.Show(String.Format("FATAL ERROR ON STARTUP: {0}", e.Message), "Error");
+                MessageBox.Show(String.Format("FATAL ERROR ON STARTUP: {0}", e.ToString()), "Error");
                 Cef.Shutdown();
                 Application.Exit();
                 Environment.Exit(996);

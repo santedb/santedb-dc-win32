@@ -28,6 +28,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SanteDB.DisconnectedClient.UI;
+using System.IO;
 #if !IE
 using CefSharp.WinForms;
 using CefSharp;
@@ -55,7 +56,7 @@ namespace SanteDB.DisconnectedClient.Win32
 
             InitializeComponent();
 
-             
+            this.m_tracer.TraceInfo("Starting up browser interface to {0}", url);
             Action<ApplicationProgressEventArgs> updateUi = (e) =>
             {
                 try
@@ -157,23 +158,19 @@ namespace SanteDB.DisconnectedClient.Win32
 
 #if IE
 #else
-            var settings = new CefSettings() { UserAgent = $"SanteDB-DC {ApplicationContext.Current.ExecutionUuid}" };
-            CefSharpSettings.WcfEnabled = true;
-            Cef.Initialize(settings, performDependencyCheck: true, browserProcessHandler: null);
-            Cef.EnableHighDPISupport();
 #endif
-
             this.m_browser = new ChromiumWebBrowser(url);
             this.m_browser.RequestHandler = new DisconnectedClientRequestHandler();
 
 #if !DEBUG
-            mnsTools.Visible = Program.Parameters.Debug;
+            mnsTools.Visible = Program.Parameters?.Debug == true;
 #endif
             this.m_browser.JavascriptObjectRepository.Settings.LegacyBindingEnabled = true;
             this.m_browser.JavascriptObjectRepository.Register("SanteDBApplicationService", new AppletFunctionBridge(this), false, BindingOptions.DefaultBinder);
             this.pnlMain.Controls.Add(this.m_browser);
             this.m_browser.Dock = DockStyle.Fill;
             this.m_browser.JsDialogHandler = new WinFormsDialogProvider();
+            this.m_browser.DownloadHandler = new DownloadHandler();
         }
 
         // Go dback

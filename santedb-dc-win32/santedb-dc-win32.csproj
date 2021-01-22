@@ -111,6 +111,7 @@
     <Compile Include="ConfigurationProviders\ShimGeneratorConfigurationProvider.cs" />
     <Compile Include="ConsoleParameters.cs" />
     <Compile Include="DisconnectedClientRequestHandler.cs" />
+    <Compile Include="DownloadHandler.cs" />
     <Compile Include="frmMain.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -164,10 +165,16 @@
       <Version>3.0.0-beta-1914</Version>
     </PackageReference>
     <PackageReference Include="SanteDB.DisconnectedClient">
-      <Version>2.0.65.0</Version>
+      <Version>2.0.71</Version>
+    </PackageReference>
+    <PackageReference Include="SanteDB.DisconnectedClient.SQLite">
+      <Version>2.0.71</Version>
     </PackageReference>
     <PackageReference Include="SanteDB.DisconnectedClient.UI">
-      <Version>2.0.65.0</Version>
+      <Version>2.0.71</Version>
+    </PackageReference>
+    <PackageReference Include="SQLite.Net-PCL.MEDIC">
+      <Version>3.1.1</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

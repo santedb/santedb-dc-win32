@@ -31,8 +31,13 @@ namespace SanteDB.DisconnectedClient.Win32
     /// <summary>
     /// Disconnected client request handler
     /// </summary>
-    public class DisconnectedClientRequestHandler : IRequestHandler
+    public class DisconnectedClientRequestHandler : IRequestHandler, IResourceRequestHandler
     {
+        public void Dispose()
+        {
+            
+        }
+
         /// <summary>
         /// Get authentication credentials
         /// </summary>
@@ -43,17 +48,41 @@ namespace SanteDB.DisconnectedClient.Win32
 
         public bool GetAuthCredentials(IWebBrowser chromiumWebBrowser, IBrowser browser, string originUrl, bool isProxy, string host, int port, string realm, string scheme, IAuthCallback callback)
         {
-            throw new NotImplementedException();
+            return false;
+        }
+
+        public ICookieAccessFilter GetCookieAccessFilter(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request)
+        {
+            return null;
+        }
+
+        public IResourceHandler GetResourceHandler(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request)
+        {
+            return null;
         }
 
         public IResourceRequestHandler GetResourceRequestHandler(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, bool isNavigation, bool isDownload, string requestInitiator, ref bool disableDefaultHandling)
+        {
+            return this;
+        }
+
+        public IResponseFilter GetResourceResponseFilter(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, IResponse response)
         {
             return null;
         }
 
         public bool OnBeforeBrowse(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, bool userGesture, bool isRedirect)
         {
+           
             return false;
+        }
+
+        public CefReturnValue OnBeforeResourceLoad(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request, IRequestCallback callback)
+        {
+            var headers = request.Headers;
+            headers["X-OIZMagic"] = ApplicationContext.Current.ExecutionUuid.ToString();
+            request.Headers = headers;
+            return CefReturnValue.Continue;
         }
 
         public bool OnCertificateError(IWebBrowser browserControl, IBrowser browser, CefErrorCode errorCode, string requestUrl, ISslInfo sslInfo, IRequestCallback callback)
@@ -75,6 +104,11 @@ namespace SanteDB.DisconnectedClient.Win32
         }
 
         public bool OnProtocolExecution(IWebBrowser browserControl, IBrowser browser, string url)
+        {
+            return false;
+        }
+
+        public bool OnProtocolExecution(IWebBrowser chromiumWebBrowser, IBrowser browser, IFrame frame, IRequest request)
         {
             return false;
         }
