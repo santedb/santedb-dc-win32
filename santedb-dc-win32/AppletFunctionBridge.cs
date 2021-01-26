@@ -220,8 +220,8 @@ namespace SanteDB.DisconnectedClient.Win32
         /// </summary>
         public String GetVersion()
         {
-            var asm = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(o => o.DefinedTypes.Any(t => t.Name == "SplashActivity")) ?? typeof(SanteDBConfiguration).Assembly;
 
+            var asm = typeof(SanteDBConfiguration).Assembly;
             return String.Format("{0} ({1})", asm.GetName().Version,
                 asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion);
         }

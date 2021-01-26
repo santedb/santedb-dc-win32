@@ -156,7 +156,7 @@ namespace SanteDB.DisconnectedClient.Win32
                             while (!DcApplicationContext.Current.IsRunning)
                                 Application.DoEvents();
 
-                            frmMain = new frmDisconnectedClient("http://127.0.0.1:9200/");
+                            frmMain = new frmDisconnectedClient("http://127.0.0.1:9200/#!/config/initialSettings");
                         }
                     }
                     else
