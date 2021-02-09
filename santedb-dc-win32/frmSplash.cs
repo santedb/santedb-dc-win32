@@ -33,32 +33,33 @@ namespace SanteDB.DisconnectedClient.Win32
 {
     public partial class frmSplash : Form
     {
+        // HACK: Windows 8 doesn't like IPC so we're going to use a timer
+        private Timer m_timer = new Timer();
+        private ApplicationProgressEventArgs m_lastArgs;
 
         EventHandler<ApplicationProgressEventArgs> m_progressHandler;
+
 
         public frmSplash()
         {
             InitializeComponent();
+            this.m_timer.Interval = 1000;
+            this.m_timer.Start();
         }
 
         private void frmSplash_Load(object sender, EventArgs e)
         {
             lblVersion.Text = String.Format("v.{0} - {1}", Assembly.GetEntryAssembly().GetName().Version, Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion);
 
-            Action<ApplicationProgressEventArgs> updateUi = (ev) =>
+            this.m_timer.Tick += (o, ev) =>
             {
-                lblProgress.Text = String.Format("{0} ({1:#0}%)", ev.ProgressText, ev.Progress * 100);
+                if(this.m_lastArgs != null)
+                    lblProgress.Text = String.Format("{0} ({1:#0}%)", this.m_lastArgs.ProgressText, this.m_lastArgs.Progress * 100);
             };
 
             this.m_progressHandler = (o, ev) =>
             {
-                try
-                {
-                    this.BeginInvoke(updateUi, ev);
-                    Application.DoEvents();
-
-                }
-                catch { }
+                this.m_lastArgs = ev;
             };
             DcApplicationContext.ProgressChanged += this.m_progressHandler;
         }
@@ -66,6 +67,7 @@ namespace SanteDB.DisconnectedClient.Win32
         private void frmSplash_FormClosing(object sender, FormClosingEventArgs e)
         {
             DcApplicationContext.ProgressChanged -= this.m_progressHandler;
+            this.m_timer.Stop();
         }
     }
 }

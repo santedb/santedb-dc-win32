@@ -167,7 +167,7 @@ namespace SanteDB.DisconnectedClient.Win32
                         frmMain = new frmDisconnectedClient("http://127.0.0.1:9200/");
                     }
                     splash.Close();
-
+                    ApplicationContext.Current.GetService<IConfigurationManager>().SetAppSetting("http.bypassMagic", "");
                     
                     Application.Run(frmMain);
 
