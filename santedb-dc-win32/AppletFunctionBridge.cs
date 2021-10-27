@@ -1,22 +1,23 @@
 ﻿/*
  * Copyright 2015-2018 Mohawk College of Applied Arts and Technology
- * 
- * 
- * Licensed under the Apache License, Version 2.0 (the "License"); you 
- * may not use this file except in compliance with the License. You may 
- * obtain a copy of the License at 
- * 
- * http://www.apache.org/licenses/LICENSE-2.0 
- * 
+ *
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You may
+ * obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the 
- * License for the specific language governing permissions and limitations under 
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
  * the License.
- * 
+ *
  * User: fyfej
  * Date: 2017-9-1
  */
+
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using SanteDB.Core.Applets.Services;
@@ -41,22 +42,20 @@ using System.Windows.Forms;
 
 namespace SanteDB.DisconnectedClient.Win32
 {
-
     /// <summary>
     /// Application function bridge
     /// </summary>
 #if IE
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
 #endif
+
     public class AppletFunctionBridge
     {
-
         /// <summary>
         /// Convert object to JSON.
         /// </summary>
         private static String ToJson<T>(T obj)
         {
-
             JsonSerializer jsz = new JsonSerializer();
             jsz.Converters.Add(new StringEnumConverter());
             jsz.NullValueHandling = NullValueHandling.Ignore;
@@ -66,7 +65,6 @@ namespace SanteDB.DisconnectedClient.Win32
                 jsz.Serialize(sw, obj);
                 return sw.ToString();
             }
-
         }
 
         /// <summary>
@@ -77,7 +75,7 @@ namespace SanteDB.DisconnectedClient.Win32
             JsonSerializer jsz = new JsonSerializer()
             {
                 SerializationBinder = new ModelSerializationBinder(),
-                TypeNameAssemblyFormat= System.Runtime.Serialization.Formatters.FormatterAssemblyStyle.Simple,
+                TypeNameAssemblyFormat = System.Runtime.Serialization.Formatters.FormatterAssemblyStyle.Simple,
                 TypeNameHandling = TypeNameHandling.All
             };
             jsz.Converters.Add(new StringEnumConverter());
@@ -87,7 +85,6 @@ namespace SanteDB.DisconnectedClient.Win32
             }
         }
 
-
         // Context
         private Tracer m_tracer = Tracer.GetTracer(typeof(AppletFunctionBridge));
 
@@ -95,7 +92,7 @@ namespace SanteDB.DisconnectedClient.Win32
         private Dictionary<IPrincipal, String> m_cachedMenus = new Dictionary<IPrincipal, String>();
 
         private frmDisconnectedClient m_context;
-        
+
         /// <summary>
         /// Gets the context of the function
         /// </summary>
@@ -146,7 +143,6 @@ namespace SanteDB.DisconnectedClient.Win32
             return "";
         }
 
-
         /// <summary>
         /// Gets the registered template form
         /// </summary>
@@ -155,7 +151,6 @@ namespace SanteDB.DisconnectedClient.Win32
         {
             return DcApplicationContext.Current.GetService<IAppletManagerService>().Applets.GetTemplateDefinition(templateId)?.Form;
         }
-
 
         /// <summary>
         /// Gets the registered template form
@@ -220,7 +215,6 @@ namespace SanteDB.DisconnectedClient.Win32
         /// </summary>
         public String GetVersion()
         {
-
             var asm = typeof(SanteDBConfiguration).Assembly;
             return String.Format("{0} ({1})", asm.GetName().Version,
                 asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion);
@@ -249,15 +243,13 @@ namespace SanteDB.DisconnectedClient.Win32
                 return ApplicationContext.Current.GetService(serviceType)?.GetType().Name;
         }
 
-
-        
         public string GetNetworkState()
         {
             var networkInformationService = ApplicationContext.Current.GetService<INetworkInformationService>();
 
             return networkInformationService.IsNetworkAvailable.ToString();
         }
-      
+
         /// <summary>
         /// Get the specified string
         /// </summary>
@@ -267,7 +259,7 @@ namespace SanteDB.DisconnectedClient.Win32
         {
             try
             {
-                return DcApplicationContext.Current.GetService<IAppletManagerService>().Applets.GetStrings(locale)?.FirstOrDefault(o => o.Key == stringId).Value ?? stringId;
+                return DcApplicationContext.Current.GetService<ILocalizationService>().GetString(locale, stringId) ?? stringId;
             }
             catch (Exception e)
             {
@@ -284,17 +276,17 @@ namespace SanteDB.DisconnectedClient.Win32
             this.m_context.Back();
         }
 
-
         /// <summary>Close the applet</summary>
         public void Close()
         {
-            Action doClose = () => {
+            Action doClose = () =>
+            {
                 try
                 {
                     Process.Start(Assembly.GetEntryAssembly().Location);
                     this.m_context.Close();
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     MessageBox.Show("Could not automatically stop/start the application - Please close the application and restart");
                 }
@@ -307,7 +299,7 @@ namespace SanteDB.DisconnectedClient.Win32
         /// </summary>
         public String GetStrings(String locale)
         {
-            var strings = DcApplicationContext.Current.GetService<IAppletManagerService>().Applets.GetStrings(locale);
+            var strings = DcApplicationContext.Current.GetService<ILocalizationService>().GetStrings(locale);
 
             using (StringWriter sw = new StringWriter())
             {
@@ -319,7 +311,6 @@ namespace SanteDB.DisconnectedClient.Win32
                 sw.Write("\"locale\":\"{0}\" }}", locale);
                 return sw.ToString();
             }
-
         }
 
         /// <summary>
