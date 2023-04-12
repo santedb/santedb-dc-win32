@@ -130,8 +130,8 @@ namespace SanteDB.Client.WinUI
 
             this.SetTitleBar(TitleBarDragArea);
 
-            //m_TracerWindow = new TracerOutputWindow();
-            //m_TracerWindow.Activate();
+            m_TracerWindow = new TracerOutputWindow();
+            m_TracerWindow.Activate();
         }
 
 

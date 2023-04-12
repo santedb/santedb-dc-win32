@@ -65,7 +65,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SanteDB.Client.Shared\SanteDB.Client.Shared.csproj" />
+    <ProjectReference Include="..\..\santedb-dc-core\SanteDB.Client.Shared\SanteDB.Client.Shared.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="applets\santedb.core.sln.pak">
