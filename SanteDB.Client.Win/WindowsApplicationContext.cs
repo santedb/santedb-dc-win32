@@ -1,4 +1,5 @@
 ﻿using SanteDB.Client.UserInterface;
+using SanteDB.Client.Win;
 using SanteDB.Core;
 using SanteDB.Core.Configuration;
 using SanteDB.Core.Security.Configuration;
@@ -11,9 +12,9 @@ using System.Threading.Tasks;
 
 namespace SanteDB.Client.WinUI
 {
-    public class DisconnectedClientApplicationContext : ClientApplicationContextBase
+    public class WindowsApplicationContext : ClientApplicationContextBase
     {
-        public DisconnectedClientApplicationContext(string instanceName, IConfigurationManager configurationManager, MainWindow mainWindow)
+        public WindowsApplicationContext(string instanceName, IConfigurationManager configurationManager, MainWindow mainWindow)
             : base(Core.SanteDBHostType.Client, instanceName, configurationManager)
         {
 
@@ -35,6 +36,7 @@ namespace SanteDB.Client.WinUI
 
             DependencyServiceManager.AddServiceProvider(new WindowsInteractionProvider(mainWindow));
             DependencyServiceManager.AddServiceProvider(new WindowsBridgeProvider());
+            DependencyServiceManager.AddServiceProvider(new WindowsOperatingSystemInfoService());
         }
 
         public override void Start()

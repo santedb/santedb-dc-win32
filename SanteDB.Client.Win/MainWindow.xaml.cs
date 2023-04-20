@@ -4,6 +4,7 @@ using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
@@ -55,77 +56,25 @@ namespace SanteDB.Client.WinUI
             m_FirstRender = true;
             this.InitializeComponent();
 
+            if (MicaController.IsSupported())
+            {
+                SystemBackdrop = new MicaBackdrop { Kind = MicaKind.Base };
+            }
+            else if (DesktopAcrylicController.IsSupported())
+            {
+                SystemBackdrop = new DesktopAcrylicBackdrop();
+            }
+
             this.Closed += MainWindow_Closed;
 
             m_JsonSerializer = new JsonSerializer();
 
-            m_Hwnd = WindowNative.GetWindowHandle(this);
-            m_WindowId = Win32Interop.GetWindowIdFromWindow(m_Hwnd);
-            m_AppWindow = AppWindow.GetFromWindowId(m_WindowId);
-
-            m_AppWindow.SetIcon("Assets\\santedb.ico");
+            AppWindow.SetIcon("Assets\\santedb.ico");
 
             Vanara.PInvoke.DwmApi.DwmSetWindowAttribute<bool>(m_Hwnd, Vanara.PInvoke.DwmApi.DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, true);
-            Vanara.PInvoke.DwmApi.DwmSetWindowAttribute<Vanara.PInvoke.DwmApi.DWM_WINDOW_CORNER_PREFERENCE>(m_Hwnd, Vanara.PInvoke.DwmApi.DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE, Vanara.PInvoke.DwmApi.DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND);
-
-            m_QueueHelper = new WindowsSystemDispatcherQueueHelper();
-            m_QueueHelper.EnsureWindowsSystemDispatcherQueueController();
-
-            if (MicaController.IsSupported())
-            {
-                m_BackdropConfiguration = new SystemBackdropConfiguration();
-
-                this.Activated += MainWindow_Activated;
-
-                if (this.Content is FrameworkElement fwe)
-                {
-                    fwe.ActualThemeChanged += MainWindow_ActualThemeChanged;
-                }
-
-                
-
-                m_BackdropConfiguration.IsInputActive = true;
-
-                SetTheme();
-
-                m_BackdropController = new MicaController { Kind = MicaKind.Base };
-
-                m_BackdropController.AddSystemBackdropTarget(this.As<ICompositionSupportsSystemBackdrop>());
-                m_BackdropController.SetSystemBackdropConfiguration(m_BackdropConfiguration);
-            }
-            else if (DesktopAcrylicController.IsSupported())
-            {
-                m_BackdropConfiguration = new SystemBackdropConfiguration();
-
-                this.Activated += MainWindow_Activated;
-
-                if (this.Content is FrameworkElement fwe)
-                {
-                    fwe.ActualThemeChanged += MainWindow_ActualThemeChanged;
-                }
-
-
-
-                m_BackdropConfiguration.IsInputActive = true;
-
-                SetTheme();
-
-                m_BackdropController = new DesktopAcrylicController();
-
-                m_BackdropController.AddSystemBackdropTarget(this.As<ICompositionSupportsSystemBackdrop>());
-                m_BackdropController.SetSystemBackdropConfiguration(m_BackdropConfiguration);
-            }
-
+            
             this.Title = "SanteDB";
 
-            //if (AppWindowTitleBar.IsCustomizationSupported())
-            //{
-            //    var handle = WindowNative.GetWindowHandle(this);
-            //    var windowid = Win32Interop.GetWindowIdFromWindow(handle);
-            //    var appwindow = AppWindow.GetFromWindowId(windowid);
-            //    appwindow.TitleBar.ExtendsContentIntoTitleBar = true;
-            //    appwindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
-            //}
             this.ExtendsContentIntoTitleBar = true;
 
             this.SetTitleBar(TitleBarDragArea);
@@ -141,47 +90,15 @@ namespace SanteDB.Client.WinUI
             ForwardButton.IsEnabled = sender.CanGoForward;
         }
 
-        void SetTheme()
-        {
-
-            if (null != m_BackdropConfiguration && this.Content is FrameworkElement fwe)
-            {
-                m_BackdropConfiguration.Theme = fwe.ActualTheme switch
-                {
-                    ElementTheme.Dark => SystemBackdropTheme.Dark,
-                    ElementTheme.Light => SystemBackdropTheme.Light,
-                    _ => SystemBackdropTheme.Default
-                };
-            }
-        }
-
-        private void MainWindow_ActualThemeChanged(FrameworkElement sender, object args)
-        {
-            SetTheme();
-        }
+        
 
         private void MainWindow_Closed(object sender, WindowEventArgs args)
         {
-            if (null != m_BackdropController)
-            {
-                m_BackdropController.Dispose();
-                m_BackdropController = null;
-            }
-
-            if (null != m_BackdropConfiguration)
-                m_BackdropConfiguration = null;
+            m_TracerWindow?.Close();
 
             if (ApplicationServiceContext.IsRunning)
             {
                 ApplicationServiceContext.Stop();
-            }
-        }
-
-        private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
-        {
-            if (null != m_BackdropConfiguration)
-            {
-                m_BackdropConfiguration.IsInputActive = args.WindowActivationState != WindowActivationState.Deactivated;
             }
         }
 

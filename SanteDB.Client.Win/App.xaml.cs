@@ -140,7 +140,7 @@ namespace SanteDB.Client.WinUI
 
                     //var configmanager = new SanteDB.Client.Batteries.Configuration.DefaultDcdrConfigurationProvider();
 
-                    var context = new DisconnectedClientApplicationContext("DEFAULT", configmanager, m_window);
+                    var context = new WindowsApplicationContext("DEFAULT", configmanager, m_window);
 
                     ServiceUtil.Start(Guid.NewGuid(), context);
 
