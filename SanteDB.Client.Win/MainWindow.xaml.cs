@@ -5,6 +5,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
@@ -21,8 +22,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using Vanara.PInvoke;
+using Windows.Graphics;
+using Windows.UI;
+using Windows.UI.ViewManagement;
 using WinRT;
 using WinRT.Interop;
 
@@ -36,25 +42,28 @@ namespace SanteDB.Client.WinUI
     /// </summary>
     public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
-        SystemBackdropConfiguration? m_BackdropConfiguration;
-        ISystemBackdropControllerWithTargets? m_BackdropController;
-        WindowsSystemDispatcherQueueHelper m_QueueHelper;
         private bool m_FirstRender;
         private nint m_Hwnd;
         private WindowId m_WindowId;
-        private AppWindow m_AppWindow;
         private string? m_Magic;
 
         private JsonSerializer m_JsonSerializer;
 
         private TracerOutputWindow? m_TracerWindow;
 
+        private UISettings m_UISettings;
+
         public event PropertyChangedEventHandler? PropertyChanged;
+
+        public static string[] s_AllowedContextMenuItems = new[] { "back", "forward", "reload", "print", "emoji", "undo", "redo", "cut", "copy", "paste", "pasteAndMatchStyle", "selectAll" };
 
         public MainWindow()
         {
             m_FirstRender = true;
             this.InitializeComponent();
+
+            m_WindowId = AppWindow.Id;
+            m_Hwnd = Win32Interop.GetWindowFromWindowId(m_WindowId);
 
             if (MicaController.IsSupported())
             {
@@ -66,23 +75,168 @@ namespace SanteDB.Client.WinUI
             }
 
             this.Closed += MainWindow_Closed;
+            this.Activated += MainWindow_Activated;
 
             m_JsonSerializer = new JsonSerializer();
 
             AppWindow.SetIcon("Assets\\santedb.ico");
 
-            Vanara.PInvoke.DwmApi.DwmSetWindowAttribute<bool>(m_Hwnd, Vanara.PInvoke.DwmApi.DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, true);
-            
             this.Title = "SanteDB";
 
-            this.ExtendsContentIntoTitleBar = true;
+            if (AppWindowTitleBar.IsCustomizationSupported())
+            {
+                var titlebar = AppWindow.TitleBar;
+                titlebar.ExtendsContentIntoTitleBar = true;
+                TitleBar.Loaded += TitleBar_Loaded;
+                TitleBar.SizeChanged += TitleBar_SizeChanged;
+                titlebar.PreferredHeightOption = TitleBarHeightOption.Tall;
+                titlebar.ButtonBackgroundColor = Colors.Transparent;
+                titlebar.ButtonInactiveBackgroundColor = Colors.Transparent;
+            }
+            else
+            {
+                //TODO: Unsupported customization
+                TitleBarText.Visibility = Visibility.Collapsed;
+            }
 
-            this.SetTitleBar(TitleBarDragArea);
+            m_UISettings = new UISettings();
+            m_UISettings.ColorValuesChanged += UISettings_ColorValuesChanged;
 
             m_TracerWindow = new TracerOutputWindow();
             m_TracerWindow.Activate();
         }
 
+        private void UISettings_ColorValuesChanged(UISettings sender, object args)
+        {
+            SetControlStyles();
+        }
+
+        private bool m_IsWindowDeactivated;
+
+        private void SetControlStyles()
+        {
+            if (this.DispatcherQueue.HasThreadAccess != true)
+            {
+                this.DispatcherQueue.TryEnqueue(SetControlStyles);
+            }
+            else
+            {
+
+                SolidColorBrush foreground;
+                SolidColorBrush disabledbutton = (SolidColorBrush)App.Current.Resources["WindowCaptionForegroundDisabled"];
+
+                if (m_IsWindowDeactivated)
+                {
+                    foreground = (SolidColorBrush)App.Current.Resources["WindowCaptionForegroundDisabled"];
+                }
+                else
+                {
+                    foreground = (SolidColorBrush)App.Current.Resources["WindowCaptionForeground"];
+
+                }
+
+                AboutButton.Foreground = foreground;
+                TitleBarText.Foreground = foreground;
+                RefreshButton.Foreground = foreground;
+
+                BackButton.Foreground = BackButton.IsEnabled ? foreground : disabledbutton;
+                ForwardButton.Foreground = ForwardButton.IsEnabled ? foreground : disabledbutton;
+
+
+                if (AppWindowTitleBar.IsCustomizationSupported() && AppWindow.TitleBar.ExtendsContentIntoTitleBar)
+                {
+                    AppWindow.TitleBar.ButtonForegroundColor = foreground.Color;
+                    AppWindow.TitleBar.ButtonInactiveForegroundColor = disabledbutton.Color;
+                }
+            }
+        }
+
+        private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
+        {
+            m_IsWindowDeactivated = args.WindowActivationState == WindowActivationState.Deactivated;
+            SetControlStyles();
+        }
+
+        private void TitleBar_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            SetDragRegionForCustomTitleBar();
+        }
+
+        private void TitleBar_Loaded(object sender, RoutedEventArgs e)
+        {
+            SetDragRegionForCustomTitleBar();
+        }
+
+        private double GetScalingFactor()
+        {
+            var displayarea = DisplayArea.GetFromWindowId(m_WindowId, DisplayAreaFallback.Primary);
+
+            if (null == displayarea)
+            {
+                //TODO: Log this
+                return 1d;
+            }
+
+            var monitorhwnd = Win32Interop.GetMonitorFromDisplayId(displayarea.DisplayId);
+
+            var result = Vanara.PInvoke.SHCore.GetDpiForMonitor((HMONITOR)monitorhwnd, SHCore.MONITOR_DPI_TYPE.MDT_DEFAULT, out var dpix, out var dpiy);
+
+            if (!result.Succeeded)
+            {
+                return 1d;
+            }
+
+            uint scalefactorpercent = (uint)(((long)dpix * 100 + (96 >> 1)) / 96);
+            return scalefactorpercent / 100.0;
+        }
+
+        private void SetDragRegionForCustomTitleBar()
+        {
+            if (AppWindowTitleBar.IsCustomizationSupported() && AppWindow.TitleBar.ExtendsContentIntoTitleBar)
+            {
+                var scalingfactor = GetScalingFactor();
+
+                double scale(double value)
+                {
+                    return value * scalingfactor;
+                }
+
+                TitleBarLeftInset.Width = new GridLength(AppWindow.TitleBar.LeftInset / scalingfactor);
+                TitleBarRightInset.Width = new GridLength(AppWindow.TitleBar.RightInset / scalingfactor);
+
+                RectInt32 dragrectl, dragrectc, dragrectr;
+
+                dragrectl.X = (int)(
+                    scale(TitleBarLeftInset.ActualWidth) +
+                    scale(TitleBarCommandBarArea.ActualWidth)
+                    );
+                dragrectl.Y = 0;
+                dragrectl.Width = (int)(scale(TitleBarLeftDragArea.ActualWidth));
+                dragrectl.Height = (int)(scale(TitleBar.ActualHeight));
+
+                dragrectc.X = (int)(
+                        scale(TitleBarLeftInset.ActualWidth) +
+                        scale(TitleBarCommandBarArea.ActualWidth) +
+                        scale(TitleBarLeftDragArea.ActualWidth)
+                    );
+                dragrectc.Y = 0;
+                dragrectc.Width = (int)(scale(TitleBarCaption.ActualWidth));
+                dragrectc.Height = (int)(scale(TitleBar.ActualHeight));
+
+                dragrectr.X = (int)(
+                    scale(TitleBarLeftInset.ActualWidth) +
+                    scale(TitleBarCommandBarArea.ActualWidth) +
+                    scale(TitleBarLeftDragArea.ActualWidth) +
+                    scale(TitleBarCaption.ActualWidth)
+                    );
+                dragrectr.Y = 0;
+                dragrectr.Width = (int)(scale(TitleBarRightDragArea.ActualWidth));
+                dragrectr.Height = (int)(scale(TitleBar.ActualHeight));
+
+                var dragrectangles = new[] { dragrectl, dragrectc, dragrectr };
+                AppWindow.TitleBar.SetDragRectangles(dragrectangles);
+            }
+        }
 
         private void CoreWebView2_HistoryChanged(Microsoft.Web.WebView2.Core.CoreWebView2 sender, object args)
         {
@@ -90,7 +244,7 @@ namespace SanteDB.Client.WinUI
             ForwardButton.IsEnabled = sender.CanGoForward;
         }
 
-        
+
 
         private void MainWindow_Closed(object sender, WindowEventArgs args)
         {
@@ -132,10 +286,28 @@ namespace SanteDB.Client.WinUI
             Browser.NavigationCompleted += Browser_NavigationCompleted;
             Browser.CoreWebView2.WebResourceRequested += CoreWebView2_WebResourceRequested;
             Browser.CoreWebView2.DocumentTitleChanged += CoreWebView2_DocumentTitleChanged;
+            Browser.CoreWebView2.ContextMenuRequested += CoreWebView2_ContextMenuRequested;
             RefreshButton.IsEnabled = true;
 #if DEBUG
             Browser.CoreWebView2.OpenDevToolsWindow();
 #endif
+        }
+
+        private async void CoreWebView2_ContextMenuRequested(CoreWebView2 sender, CoreWebView2ContextMenuRequestedEventArgs args)
+        {
+            var menunames = args.MenuItems.Select(m => m.Name).ToList();
+            
+            var menulist = args.MenuItems;
+
+            for(int i = 0; i < menulist.Count; i++)
+            {
+                if (!s_AllowedContextMenuItems.Contains(menulist[i].Name))
+                {
+                    menulist.RemoveAt(i--);
+                }
+            }
+            
+
         }
 
         private void CoreWebView2_DocumentTitleChanged(CoreWebView2 sender, object args)
@@ -175,7 +347,7 @@ namespace SanteDB.Client.WinUI
                 deferral.Complete();
                 deferral.Dispose();
             }
-            
+
 
         }
 
@@ -187,7 +359,7 @@ namespace SanteDB.Client.WinUI
             //TODO: Locale
             var locale = "en";
 
-            var strings = localization?.GetStrings(locale)?.ToDictionaryIgnoringDuplicates(k=>k.Key, v=>v.Value);
+            var strings = localization?.GetStrings(locale)?.ToDictionaryIgnoringDuplicates(k => k.Key, v => v.Value);
 
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(strings)));
             args.Response = sender.Environment.CreateWebResourceResponse(stream.AsRandomAccessStream(), 200, "OK", "Content-Type: application/json");
@@ -230,7 +402,7 @@ namespace SanteDB.Client.WinUI
                     AppNotificationManager.Default.Show(notification);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Debugger.Break();
             }
@@ -305,7 +477,7 @@ namespace SanteDB.Client.WinUI
 
         private void Browser_NavigationStarting(WebView2 sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs args)
         {
-            
+
         }
 
 
@@ -326,7 +498,7 @@ namespace SanteDB.Client.WinUI
 
             if (this.DispatcherQueue.HasThreadAccess)
             {
-                SplashStatusText.Text = text;
+                SplashStatusText.Text = "Starting SanteDB";
                 m_TracerWindow?.AppendText(text);
             }
             else
@@ -334,8 +506,8 @@ namespace SanteDB.Client.WinUI
                 var s = text;
                 this.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
                 {
-                    SplashStatusText.Text = s;
-                    m_TracerWindow?.AppendText(text);
+                    SplashStatusText.Text = "Starting SanteDB";
+                    m_TracerWindow?.AppendText(s);
                 });
             }
 

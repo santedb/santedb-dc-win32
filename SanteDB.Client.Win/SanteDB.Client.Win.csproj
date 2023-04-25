@@ -47,6 +47,7 @@
     <PackageReference Include="NETStandard.Library" Version="2.0.3" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.4" />
     <PackageReference Include="Vanara.PInvoke.DwmApi" Version="3.4.14" />
+    <PackageReference Include="Vanara.PInvoke.SHCore" Version="3.4.14" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
