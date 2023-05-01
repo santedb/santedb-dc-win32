@@ -28,11 +28,13 @@
                     <ColumnDefinition Width="auto" x:Name="TitleBarCommandBarArea" />
                     <ColumnDefinition Width="1*" x:Name="TitleBarLeftDragArea" />
                 </Grid.ColumnDefinitions>
-                <CommandBar DefaultLabelPosition="Collapsed" TabIndex="2" Grid.Column="1" Margin="8,0">
+                <CommandBar DefaultLabelPosition="Collapsed" TabIndex="2" Grid.Column="1" Margin="8,0" IsDynamicOverflowEnabled="True">
                     <AppBarButton Icon="Back" Label="Back" x:Name="BackButton" Click="BackButton_Click" IsEnabled="false" />
                     <AppBarButton Icon="Forward" Label="Forward" x:Name="ForwardButton" Click="ForwardButton_Click" IsEnabled="false" />
                     <AppBarButton Icon="Refresh" Label="Reload" x:Name="RefreshButton" Click="RefreshButton_Click" IsEnabled="false" />
-                    <AppBarButton Icon="Help" Label="About" x:Name="AboutButton" Click="AboutButton_Click" />
+                    <CommandBar.SecondaryCommands>
+                        <AppBarButton Icon="Help" Label="About" x:Name="AboutButton" Click="AboutButton_Click" />
+                    </CommandBar.SecondaryCommands>
                 </CommandBar>
                 <Border Grid.Column="2" />
             </Grid>
@@ -48,9 +50,10 @@
             </Grid>
         </Grid>
         <Grid Grid.Row="1" Background="{ThemeResource LayerFillColorDefaultBrush}">
-            <StackPanel Orientation="Vertical" x:Name="SplashStack" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel Orientation="Vertical" x:Name="SplashStack" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
                 <Image Source="Assets/SanteDB-Render.png" Margin="25" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="1" x:Name="SplashImage" MaxWidth="400" MaxHeight="300"></Image>
                 <TextBlock x:Name="SplashStatusText" HorizontalAlignment="Center" MaxWidth="600" TextWrapping="Wrap"></TextBlock>
+                <ProgressRing IsActive="True" />
             </StackPanel>
             <WebView2 x:Name="Browser" CoreWebView2Initialized="Browser_CoreWebView2Initialized" TabIndex="1" Visibility="Collapsed"></WebView2>
         </Grid>

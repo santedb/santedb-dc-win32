@@ -16,6 +16,7 @@
             <SolidColorBrush x:Key="AppWindowCaptionBackgroundBrush" Color="Transparent" />
             <StaticResource x:Key="WindowCaptionBackground" ResourceKey="AppWindowCaptionBackgroundBrush" />
             <StaticResource x:Key="WindowCaptionBackgroundDisabled" ResourceKey="AppWindowCaptionBackgroundBrush" />
+            <SolidColorBrush x:Key="CommandBarBackgroundOpen" Color="Transparent" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -11,6 +11,7 @@ using Microsoft.Windows.PushNotifications;
 using SanteDB.Client.Configuration;
 using SanteDB.Client.Rest;
 using SanteDB.Client.Shared;
+using SanteDB.Client.Win;
 using SanteDB.Core;
 using SanteDB.Core.Interop;
 using SanteDB.Core.Model.Security;
