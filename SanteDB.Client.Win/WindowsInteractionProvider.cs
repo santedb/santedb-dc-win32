@@ -40,5 +40,10 @@ namespace SanteDB.Client.WinUI
 #endif
             m_MainWindow.ShowSplashStatusText(statusText);
         }
+
+        public void SetStatus(string taskIdentifier, string statusText, float progressIndicator)
+        {
+            //TODO: Implement
+        }
     }
 }

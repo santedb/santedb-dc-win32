@@ -1,4 +1,4 @@
-<!-- Copyright (c) Microsoft Corporation and Contributors. -->
+﻿<!-- Copyright (c) Microsoft Corporation and Contributors. -->
 <!-- Licensed under the MIT License. -->
 
 <Window
@@ -43,10 +43,67 @@
             </Border>
             <Grid Grid.Column="2">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="TitleBarRightMiddleDragArea" Width="1*" />
                     <ColumnDefinition x:Name="TitleBarRightDragArea" Width="1*" />
+                    <ColumnDefinition x:Name="TitleBarBackgroundOperationView" Width="auto" />
                     <ColumnDefinition x:Name="TitleBarRightInset" Width="0" />
                 </Grid.ColumnDefinitions>
                 <Border Grid.Column="0" />
+                <Button Grid.Column="2" x:Name="BackgroundOperationsButton" Margin="10, 0" Style="{StaticResource DefaultButtonStyle}" Click="BackgroundOperationsButton_Click">
+                    <VisualStateManager.VisualStateGroups>
+                        
+                    </VisualStateManager.VisualStateGroups>
+                    <Button.Content>
+                        <StackPanel Orientation="Vertical">
+                            <TextBlock Style="{ThemeResource CaptionTextBlockStyle}">2 Pending Operations</TextBlock>
+                            <!--<ProgressBar Value="35" Margin="0, 5, 0, 0" /> -->
+                        </StackPanel>
+                    </Button.Content>
+                    <Button.Resources>
+                        <ResourceDictionary>
+                            <ResourceDictionary.ThemeDictionaries>
+                                <ResourceDictionary x:Key="Default">
+                                    <SolidColorBrush x:Key="ButtonBackground" Color="Transparent" />
+                                    <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent" />
+                                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="{StaticResource ControlFillColorDefault}" />
+                                </ResourceDictionary>
+                            </ResourceDictionary.ThemeDictionaries>
+                        </ResourceDictionary>
+                    </Button.Resources>
+                    <Button.Flyout>
+                        <Flyout ShowMode="Standard" AreOpenCloseAnimationsEnabled="true">
+                            <!--<Flyout.FlyoutPresenterStyle>
+                                <Style TargetType="FlyoutPresenter" BasedOn="{StaticResource DefaultFlyoutPresenterStyle}">
+                                    <Setter Property="Background" Value="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" />
+                                </Style>
+                            </Flyout.FlyoutPresenterStyle>-->
+                            <StackPanel Orientation="Vertical" MinWidth="300" MaxWidth="500" Spacing="10">
+                                <Border>
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="auto" />
+                                            <RowDefinition Height="auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0">Synchronizing with SanteDB iCDR</TextBlock>
+                                        <ProgressBar Value="50" Grid.Row="1" Margin="0, 8" />
+                                    </Grid>
+                                </Border>
+                                <Border>
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="auto" />
+                                            <RowDefinition Height="auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0">Installing applet update</TextBlock>
+                                        <ProgressBar Value="25" Grid.Row="1" Margin="0, 8" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+               
+                <Border Grid.Column="1" />
             </Grid>
         </Grid>
         <Grid Grid.Row="1" Background="{ThemeResource LayerFillColorDefaultBrush}">
@@ -57,7 +114,7 @@
             </StackPanel>
             <WebView2 x:Name="Browser" CoreWebView2Initialized="Browser_CoreWebView2Initialized" TabIndex="1" Visibility="Collapsed"></WebView2>
         </Grid>
-        <ContentDialog x:Name="AboutDialog" Title="About SanteDB" IsPrimaryButtonEnabled="True" DefaultButton="Primary" PrimaryButtonText="Close">
+        <ContentDialog x:Name="AboutDialog" Title="{x:Bind GetAboutDialogTitle()}" IsPrimaryButtonEnabled="True" DefaultButton="Primary" PrimaryButtonText="Close">
             <StackPanel Orientation="Vertical" Spacing="5">
                 <TextBlock>Version <Run Text="{x:Bind GetAssemblyVersion()}"></Run></TextBlock>
                 <TextBlock Text="{x:Bind GetAssemblyCopyright()}"></TextBlock>

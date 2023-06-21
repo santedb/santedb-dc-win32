@@ -1,4 +1,4 @@
-using Microsoft.UI;
+﻿using Microsoft.UI;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
@@ -23,9 +23,13 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Vanara;
+using Vanara.InteropServices;
 using Vanara.PInvoke;
+using Windows.AI.MachineLearning;
 using Windows.Graphics;
 using Windows.UI;
 using Windows.UI.ViewManagement;
@@ -101,9 +105,44 @@ namespace SanteDB.Client.WinUI
 
             m_UISettings = new UISettings();
             m_UISettings.ColorValuesChanged += UISettings_ColorValuesChanged;
+            m_UISettings.TextScaleFactorChanged += UISettings_TextScaleFactorChanged;
+
+            
+
+            Vanara.PInvoke.ComCtl32.SetWindowSubclass(m_Hwnd, WindowSubclassProcedure, 0x1, nint.Zero);
 
             m_TracerWindow = new TracerOutputWindow();
             m_TracerWindow.Activate();
+        }
+
+        private static IntPtr WindowSubclassProcedure(HWND hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, nuint uIdSubclass, IntPtr dwRefData)
+        {
+            //Note: This method is static so that it will be fixed in memory and not relocated. If it's not static, prepare for System.ExecutionEngineExceptions back!
+
+            var msg = (User32.WindowMessage)uMsg;
+
+            switch (msg)
+            {
+                case User32.WindowMessage.WM_SIZING:
+                    var rect = Marshal.PtrToStructure<RECT>(lParam); //Get a reference to the rect supplied in lParam.
+
+                    //Check the width, and adjust accordingly
+                    rect.Width = Math.Max(rect.Width, 800);
+                    rect.Height = Math.Max(rect.Height, 560);
+
+                    //Copy the adjusted structure back to the memory location.
+                    Marshal.StructureToPtr(rect, lParam, fDeleteOld: false); //DeleteOld is false because Windows provides the structure for us. This will not leak memory
+                    break;
+                default:
+                    return ComCtl32.DefSubclassProc(hWnd, uMsg, wParam, lParam);
+            }
+
+            return nint.Zero;
+        }
+
+        private void UISettings_TextScaleFactorChanged(UISettings sender, object args)
+        {
+            SetDragRegionForCustomTitleBar();
         }
 
         private void UISettings_ColorValuesChanged(UISettings sender, object args)
@@ -162,19 +201,24 @@ namespace SanteDB.Client.WinUI
             SetDragRegionForCustomTitleBar();
         }
 
+        private void BackgroundTaskCommandBar_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            SetDragRegionForCustomTitleBar();
+        }
+
         private void TitleBar_Loaded(object sender, RoutedEventArgs e)
         {
             SetDragRegionForCustomTitleBar();
         }
 
-        private double GetScalingFactor()
+        private (double scaleX, double scaleY) GetScalingFactor()
         {
             var displayarea = DisplayArea.GetFromWindowId(m_WindowId, DisplayAreaFallback.Primary);
 
             if (null == displayarea)
             {
                 //TODO: Log this
-                return 1d;
+                return (1d, 1d);
             }
 
             var monitorhwnd = Win32Interop.GetMonitorFromDisplayId(displayarea.DisplayId);
@@ -183,11 +227,17 @@ namespace SanteDB.Client.WinUI
 
             if (!result.Succeeded)
             {
-                return 1d;
+                return (1d, 1d);
             }
 
-            uint scalefactorpercent = (uint)(((long)dpix * 100 + (96 >> 1)) / 96);
-            return scalefactorpercent / 100.0;
+            if (dpiy <= 0 || dpiy == double.NegativeZero)
+            {
+                dpiy = dpix;
+            }
+
+            double scalefactorpercent(uint dpi) => ((uint)(((long)dpi * 100 + (96 >> 1)) / 96)) / 100.0;
+
+            return (scalefactorpercent(dpix), scalefactorpercent(dpiy));
         }
 
         private void SetDragRegionForCustomTitleBar()
@@ -196,44 +246,57 @@ namespace SanteDB.Client.WinUI
             {
                 var scalingfactor = GetScalingFactor();
 
-                double scale(double value)
-                {
-                    return value * scalingfactor;
-                }
+                double scaleX(double value) => value * scalingfactor.scaleX;
 
-                TitleBarLeftInset.Width = new GridLength(AppWindow.TitleBar.LeftInset / scalingfactor);
-                TitleBarRightInset.Width = new GridLength(AppWindow.TitleBar.RightInset / scalingfactor);
+                double scaleY(double value) => value * scalingfactor.scaleY;
 
-                RectInt32 dragrectl, dragrectc, dragrectr;
+                TitleBarLeftInset.Width = new GridLength(AppWindow.TitleBar.LeftInset / scalingfactor.scaleX);
+                TitleBarRightInset.Width = new GridLength(AppWindow.TitleBar.RightInset / scalingfactor.scaleX);
+
+                RectInt32 dragrectl, dragrectc, dragrectmr, dragrectr;
+
+                int height = (int)scaleY(TitleBar.ActualHeight);
 
                 dragrectl.X = (int)(
-                    scale(TitleBarLeftInset.ActualWidth) +
-                    scale(TitleBarCommandBarArea.ActualWidth)
+                    scaleX(TitleBarLeftInset.ActualWidth) +
+                    scaleX(TitleBarCommandBarArea.ActualWidth)
                     );
                 dragrectl.Y = 0;
-                dragrectl.Width = (int)(scale(TitleBarLeftDragArea.ActualWidth));
-                dragrectl.Height = (int)(scale(TitleBar.ActualHeight));
+                dragrectl.Width = (int)(scaleX(TitleBarLeftDragArea.ActualWidth));
+                dragrectl.Height = height;
 
                 dragrectc.X = (int)(
-                        scale(TitleBarLeftInset.ActualWidth) +
-                        scale(TitleBarCommandBarArea.ActualWidth) +
-                        scale(TitleBarLeftDragArea.ActualWidth)
+                        scaleX(TitleBarLeftInset.ActualWidth) +
+                        scaleX(TitleBarCommandBarArea.ActualWidth) +
+                        scaleX(TitleBarLeftDragArea.ActualWidth)
                     );
                 dragrectc.Y = 0;
-                dragrectc.Width = (int)(scale(TitleBarCaption.ActualWidth));
-                dragrectc.Height = (int)(scale(TitleBar.ActualHeight));
+                dragrectc.Width = (int)(scaleX(TitleBarCaption.ActualWidth));
+                dragrectc.Height = height;
+
+                dragrectmr.X = (int)(
+                    scaleX(TitleBarLeftInset.ActualWidth) +
+                    scaleX(TitleBarCommandBarArea.ActualWidth) +
+                    scaleX(TitleBarLeftDragArea.ActualWidth) +
+                    scaleX(TitleBarCaption.ActualWidth)
+                    );
+
+                dragrectmr.Y = 0;
+                dragrectmr.Width = (int)(scaleX(TitleBarRightMiddleDragArea.ActualWidth));
+                dragrectmr.Height = height;
 
                 dragrectr.X = (int)(
-                    scale(TitleBarLeftInset.ActualWidth) +
-                    scale(TitleBarCommandBarArea.ActualWidth) +
-                    scale(TitleBarLeftDragArea.ActualWidth) +
-                    scale(TitleBarCaption.ActualWidth)
+                    scaleX(TitleBarLeftInset.ActualWidth) +
+                    scaleX(TitleBarCommandBarArea.ActualWidth) +
+                    scaleX(TitleBarLeftDragArea.ActualWidth) +
+                    scaleX(TitleBarCaption.ActualWidth) +
+                    scaleX(TitleBarRightMiddleDragArea.ActualWidth)
                     );
                 dragrectr.Y = 0;
-                dragrectr.Width = (int)(scale(TitleBarRightDragArea.ActualWidth));
-                dragrectr.Height = (int)(scale(TitleBar.ActualHeight));
+                dragrectr.Width = (int)(scaleX(TitleBarRightDragArea.ActualWidth));
+                dragrectr.Height = height;
 
-                var dragrectangles = new[] { dragrectl, dragrectc, dragrectr };
+                var dragrectangles = new[] { dragrectl, dragrectc, dragrectmr, dragrectr };
                 AppWindow.TitleBar.SetDragRectangles(dragrectangles);
             }
         }
@@ -248,6 +311,8 @@ namespace SanteDB.Client.WinUI
 
         private void MainWindow_Closed(object sender, WindowEventArgs args)
         {
+            Vanara.PInvoke.ComCtl32.RemoveWindowSubclass(m_Hwnd, WindowSubclassProcedure, 0x1);
+
             m_TracerWindow?.Close();
 
             if (ApplicationServiceContext.IsRunning)
@@ -314,6 +379,7 @@ namespace SanteDB.Client.WinUI
         {
             this.Title = sender.DocumentTitle;
             TitleBarText.Text = this.Title;
+            SetDragRegionForCustomTitleBar();
         }
 
         private async void CoreWebView2_WebResourceRequested(Microsoft.Web.WebView2.Core.CoreWebView2 sender, Microsoft.Web.WebView2.Core.CoreWebView2WebResourceRequestedEventArgs args)
@@ -462,6 +528,9 @@ namespace SanteDB.Client.WinUI
             return _Copyright;
         }
 
+        private string? GetAboutDialogTitle()
+            => "About SanteDB for Windows®️";
+
         private IApplicationServiceContext ApplicationServiceContext => SanteDB.Core.ApplicationServiceContext.Current;
 
 
@@ -480,7 +549,10 @@ namespace SanteDB.Client.WinUI
 
         }
 
+        private void BackgroundOperationsButton_Click(object sender, RoutedEventArgs e)
+        {
 
+        }
 
         private async void AboutButton_Click(object sender, RoutedEventArgs e)
         {
