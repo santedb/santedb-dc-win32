@@ -9,6 +9,8 @@ namespace SanteDB.Client.WinUI
 {
     public class WindowsInteractionProvider : IUserInterfaceInteractionProvider
     {
+        private static readonly string s_DefaultTaskIdentifier = string.Empty;
+
         public string ServiceName => "Windows Interaction Provider";
 
         readonly MainWindow m_MainWindow;
@@ -34,16 +36,14 @@ namespace SanteDB.Client.WinUI
         }
 
         public void SetStatus(string statusText, float progressIndicator)
+            => SetStatus(s_DefaultTaskIdentifier, statusText, progressIndicator);
+
+        public void SetStatus(string taskIdentifier, string statusText, float progressIndicator)
         {
 #if DEBUG
             System.Diagnostics.Debug.WriteLine(statusText);
 #endif
             m_MainWindow.ShowSplashStatusText(statusText);
-        }
-
-        public void SetStatus(string taskIdentifier, string statusText, float progressIndicator)
-        {
-            //TODO: Implement
         }
     }
 }
