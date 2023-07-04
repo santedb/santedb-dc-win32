@@ -9,7 +9,9 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+    xmlns:vm="using:SanteDB.Client.Win.ViewModels"
     mc:Ignorable="d"
+    x:DataType="vm:MainWindowViewModel"
     >
     <Grid>
         <Grid.RowDefinitions>
@@ -110,7 +112,7 @@
             <StackPanel Orientation="Vertical" x:Name="SplashStack" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
                 <Image Source="Assets/SanteDB-Render.png" Margin="25" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="1" x:Name="SplashImage" MaxWidth="400" MaxHeight="300"></Image>
                 <TextBlock x:Name="SplashStatusText" HorizontalAlignment="Center" MaxWidth="600" TextWrapping="Wrap"></TextBlock>
-                <ProgressRing IsActive="True" />
+                <ProgressRing IsActive="True" x:Name="StartupProgress" />
             </StackPanel>
             <WebView2 x:Name="Browser" CoreWebView2Initialized="Browser_CoreWebView2Initialized" TabIndex="1" Visibility="Collapsed"></WebView2>
         </Grid>

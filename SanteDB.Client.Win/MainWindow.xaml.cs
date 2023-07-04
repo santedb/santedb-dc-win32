@@ -561,7 +561,7 @@ namespace SanteDB.Client.WinUI
 
         }
 
-        public void ShowSplashStatusText(string text)
+        public void ShowSplashStatusText(string text, float? progress = null)
         {
             if (null == this.DispatcherQueue)
             {
@@ -570,7 +570,7 @@ namespace SanteDB.Client.WinUI
 
             if (this.DispatcherQueue.HasThreadAccess)
             {
-                SplashStatusText.Text = "Starting SanteDB";
+                SplashStatusText.Text = text;
                 m_TracerWindow?.AppendText(text);
             }
             else
@@ -578,7 +578,7 @@ namespace SanteDB.Client.WinUI
                 var s = text;
                 this.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
                 {
-                    SplashStatusText.Text = "Starting SanteDB";
+                    SplashStatusText.Text = s;
                     m_TracerWindow?.AppendText(s);
                 });
             }

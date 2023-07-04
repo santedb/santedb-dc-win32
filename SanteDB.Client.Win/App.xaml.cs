@@ -86,13 +86,13 @@ namespace SanteDB.Client.WinUI
                 {
                     try
                     {
-                        m_window.ShowSplashStatusText(string.Format("Loading reference assembly {0}...", itm));
+                        //m_window.ShowSplashStatusText(string.Format("Loading reference assembly {0}...", itm));
                         AssemblyLoadContext.Default.LoadFromAssemblyPath(itm);
 
                     }
                     catch (Exception e)
                     {
-                        m_window.ShowSplashStatusText(string.Format("Error loading assembly {0}: {1}", itm, e));
+                        //m_window.ShowSplashStatusText(string.Format("Error loading assembly {0}: {1}", itm, e));
                     }
                 });
 

@@ -23,7 +23,7 @@ namespace SanteDB.Client.WinUI
 
         protected override void WriteTrace(EventLevel level, string source, string format, params object[] args)
         {
-            m_MainWindow.ShowSplashStatusText(string.Format(format, args));
+            //m_MainWindow.ShowSplashStatusText(string.Format(format, args));
         }
     }
 }
