@@ -63,6 +63,8 @@ namespace SanteDB.Client.WinUI
 
         public MainWindow()
         {
+            
+
             m_FirstRender = true;
             this.InitializeComponent();
 

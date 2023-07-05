@@ -11,7 +11,6 @@
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     xmlns:vm="using:SanteDB.Client.Win.ViewModels"
     mc:Ignorable="d"
-    x:DataType="vm:MainWindowViewModel"
     >
     <Grid>
         <Grid.RowDefinitions>

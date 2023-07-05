@@ -53,7 +53,7 @@ namespace SanteDB.Client.WinUI
                 //Debugger.Break();
             }
 
-            m_MainWindow.ShowSplashStatusText($"Starting SanteDB - {Math.Round(progressIndicator, 2)}");
+            m_MainWindow.ShowSplashStatusText($"Starting SanteDB - {Math.Round(progressIndicator, 2)} :: {taskIdentifier}");
         }
 
         private class TaskStatus
