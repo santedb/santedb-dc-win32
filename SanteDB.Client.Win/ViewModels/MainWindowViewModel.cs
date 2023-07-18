@@ -1,16 +1,17 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.UI.Xaml.Input;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.Web.WebView2.Core;
+using SanteDB.Client.WinUI;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
 namespace SanteDB.Client.Win.ViewModels
 {
     internal partial class MainWindowViewModel : ObservableObject
     {
+        public ObservableCollection<BackgroundTaskStatus> BackgroundTasks { get; } = new();
+
         /// <summary>
         /// Gets or sets the title of the main window.
         /// </summary>
@@ -37,35 +38,56 @@ namespace SanteDB.Client.Win.ViewModels
         /// </summary>
         public string? UserAgentString => $"SanteDB-{BrowserMagic}";
 
-        public string WindowTitle => Title ?? "SanteDB";
+        public string WindowTitle
+        {
+            get
+            {
+                var title = Title;
+                if (string.IsNullOrEmpty(title))
+                {
+                    return "SanteDB";
+                }
+                else if (!title.Contains("santedb", System.StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return $"{title} - SanteDB";
+                }
+                else
+                {
+                    return title;
+                }
+            }
+        }
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanGoBack))]
         private void GoBack()
         {
-
+            Browser.GoBack();
         }
 
         [ObservableProperty, NotifyCanExecuteChangedFor(nameof(GoBackCommand))]
-        bool canGoBack;
+        bool canGoBack = false;
 
-        
 
-        [RelayCommand]
-        private async Task GoForward()
+
+        [RelayCommand(CanExecute = nameof(CanGoForward))]
+        private void GoForward()
         {
-
+            Browser.GoForward();
         }
 
         [ObservableProperty, NotifyCanExecuteChangedFor(nameof(GoForwardCommand))]
-        bool canGoForward;
+        bool canGoForward = false;
 
-        [RelayCommand]
-        private async Task RefreshPage()
+        [RelayCommand(CanExecute = nameof(CanRefreshPage))]
+        private void RefreshPage()
         {
-
+            Browser.Reload();
         }
 
         [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshPageCommand))]
-        bool canRefreshPage;
+        bool canRefreshPage = false;
+
+        internal MainWindow MainWindow { get; set; }
+        internal WebView2 Browser { get; set; }
     }
 }

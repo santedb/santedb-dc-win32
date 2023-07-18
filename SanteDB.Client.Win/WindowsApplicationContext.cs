@@ -29,7 +29,8 @@ namespace SanteDB.Client.WinUI
                     new SecuritySignatureConfiguration
                     {
                         Algorithm = SignatureAlgorithm.HS256,
-                        HmacSecret = "@@SanteDB2021!&",
+                        //HmacSecret = "@@SanteDB2021!&",
+                        HmacSecret = "QUFCN0ZDQjk2ODU1MDkwODIzNTIxREM2OEIxRTA5RDgzMUQ3MkY1RTk2MzAzNzRCMjU0ODdBMUFCQzUzRDAzMjYyMjQ1REE0RDA1MUMyRkMzOEVGMkNCMjBCM0FDQzRBRjE2MTdEQzUwQ0U4NDJGOUFFOEIzMjQzRTQ2MUNCMTE="
                     }
                 }
             });

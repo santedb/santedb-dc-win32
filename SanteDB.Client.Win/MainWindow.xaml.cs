@@ -1,40 +1,30 @@
 ﻿using Microsoft.UI;
-using Microsoft.UI.Composition;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
 using Newtonsoft.Json;
 using SanteDB.Client.Configuration.Upstream;
 using SanteDB.Client.Win;
+using SanteDB.Client.Win.ViewModels;
 using SanteDB.Core;
 using SanteDB.Core.Services;
-using SanteDB.Rest.Common;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using Vanara;
-using Vanara.InteropServices;
 using Vanara.PInvoke;
-using Windows.AI.MachineLearning;
 using Windows.Graphics;
-using Windows.UI;
 using Windows.UI.ViewManagement;
-using WinRT;
-using WinRT.Interop;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -59,14 +49,28 @@ namespace SanteDB.Client.WinUI
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
+        private bool m_IsWindowDeactivated;
+
+        private SolidColorBrush m_CaptionButtonForegroundBrush;
+        private SolidColorBrush m_CaptionButtonDisabledForegroundBrush;
+        /// <summary>
+        /// Gets the current <see cref="IApplicationServiceContext"/> that is running.
+        /// </summary>
+        private IApplicationServiceContext ApplicationServiceContext => SanteDB.Core.ApplicationServiceContext.Current;
+
+        /// <summary>
+        /// Key strings for the webview2 context menu. Items not present in this list are excluded from the context menu. This prevents things like search with bing, translate, etc from appearing.
+        /// </summary>
         public static string[] s_AllowedContextMenuItems = new[] { "back", "forward", "reload", "print", "emoji", "undo", "redo", "cut", "copy", "paste", "pasteAndMatchStyle", "selectAll" };
 
         public MainWindow()
         {
-            
-
             m_FirstRender = true;
+
             this.InitializeComponent();
+
+            ViewModel.MainWindow = this;
+            ViewModel.Browser = Browser;
 
             m_WindowId = AppWindow.Id;
             m_Hwnd = Win32Interop.GetWindowFromWindowId(m_WindowId);
@@ -87,7 +91,7 @@ namespace SanteDB.Client.WinUI
 
             AppWindow.SetIcon("Assets\\santedb.ico");
 
-            this.Title = "SanteDB";
+            //this.Title = "SanteDB";
 
             if (AppWindowTitleBar.IsCustomizationSupported())
             {
@@ -109,17 +113,41 @@ namespace SanteDB.Client.WinUI
             m_UISettings.ColorValuesChanged += UISettings_ColorValuesChanged;
             m_UISettings.TextScaleFactorChanged += UISettings_TextScaleFactorChanged;
 
-            
+            m_CaptionButtonDisabledForegroundBrush = (SolidColorBrush)App.Current.Resources["WindowCaptionForegroundDisabled"];
+            m_CaptionButtonForegroundBrush = (SolidColorBrush)App.Current.Resources["WindowCaptionForeground"];
 
+            //Subclass the win32 window to handle specific window messages.
             Vanara.PInvoke.ComCtl32.SetWindowSubclass(m_Hwnd, WindowSubclassProcedure, 0x1, nint.Zero);
 
-            m_TracerWindow = new TracerOutputWindow();
-            m_TracerWindow.Activate();
+            //m_TracerWindow = new TracerOutputWindow();
+            //m_TracerWindow.Activate();
+
+            //Fix for incorrect foregrounds on enabled/disabled controls in the title bar.
+            ViewModel.PropertyChanged += (s, e) =>
+            {
+                SetControlStyles();
+            };
         }
 
-        private static IntPtr WindowSubclassProcedure(HWND hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, nuint uIdSubclass, IntPtr dwRefData)
+        /// <summary>
+        /// Gets the ViewModel that is responsible for handling this window.
+        /// </summary>
+        internal MainWindowViewModel ViewModel { get; } = new();
+
+        /// <summary>
+        /// WNDPROC for subclassed window 
+        /// </summary>
+        /// <remarks>This method must be static to pass a pointer for a callback.</remarks>
+        /// <param name="hWnd">Window handle which the message applies to.</param>
+        /// <param name="uMsg">The message type</param>
+        /// <param name="wParam">The WPARAM parameter</param>
+        /// <param name="lParam">The LPARAM parameter</param>
+        /// <param name="uIdSubclass">The index of the subclass defined in the <see cref="Vanara.PInvoke.ComCtl32.SetWindowSubclass(HWND, ComCtl32.SUBCLASSPROC, nuint, nint)"/> call.</param>
+        /// <param name="dwRefData">The reference data of the subclass defined in the <see cref="Vanara.PInvoke.ComCtl32.SetWindowSubclass(HWND, ComCtl32.SUBCLASSPROC, nuint, nint)"/> call.</param>
+        /// <returns><c>IntPtr.Zero</c> on success, or an error code.</returns>
+        private static nint WindowSubclassProcedure(HWND hWnd, uint uMsg, nint wParam, nint lParam, nuint uIdSubclass, nint dwRefData)
         {
-            //Note: This method is static so that it will be fixed in memory and not relocated. If it's not static, prepare for System.ExecutionEngineExceptions back!
+            //Note: This method is static so that it will be fixed in memory and not relocated. If it's not static, prepare for System.ExecutionEngineExceptions!
 
             var msg = (User32.WindowMessage)uMsg;
 
@@ -133,9 +161,9 @@ namespace SanteDB.Client.WinUI
                     rect.Height = Math.Max(rect.Height, 560);
 
                     //Copy the adjusted structure back to the memory location.
-                    Marshal.StructureToPtr(rect, lParam, fDeleteOld: false); //DeleteOld is false because Windows provides the structure for us. This will not leak memory
+                    Marshal.StructureToPtr(rect, lParam, fDeleteOld: false); //fDeleteOld is false because Windows provides the structure for us. This will not leak memory
                     break;
-                default:
+                default: //Delegate to the default proc.
                     return ComCtl32.DefSubclassProc(hWnd, uMsg, wParam, lParam);
             }
 
@@ -149,61 +177,62 @@ namespace SanteDB.Client.WinUI
 
         private void UISettings_ColorValuesChanged(UISettings sender, object args)
         {
-            SetControlStyles();
+            UpdateRuntimeBrushes();
         }
 
-        private bool m_IsWindowDeactivated;
-
-        private void SetControlStyles()
+        /// <summary>
+        /// Updates our cached brush values. This is usually triggered when the user updates the theme in Windows and the first time we go to paint.
+        /// </summary>
+        private void UpdateRuntimeBrushes()
         {
             if (this.DispatcherQueue.HasThreadAccess != true)
             {
-                this.DispatcherQueue.TryEnqueue(SetControlStyles);
+                this.DispatcherQueue.TryEnqueue(UpdateRuntimeBrushes);
             }
             else
             {
-
-                SolidColorBrush foreground;
-                SolidColorBrush disabledbutton = (SolidColorBrush)App.Current.Resources["WindowCaptionForegroundDisabled"];
+                m_CaptionButtonDisabledForegroundBrush = (SolidColorBrush)App.Current.Resources["WindowCaptionForegroundDisabled"];
 
                 if (m_IsWindowDeactivated)
                 {
-                    foreground = (SolidColorBrush)App.Current.Resources["WindowCaptionForegroundDisabled"];
+                    m_CaptionButtonForegroundBrush = m_CaptionButtonDisabledForegroundBrush;
                 }
                 else
                 {
-                    foreground = (SolidColorBrush)App.Current.Resources["WindowCaptionForeground"];
+                    m_CaptionButtonForegroundBrush = (SolidColorBrush)App.Current.Resources["WindowCaptionForeground"];
 
                 }
-
-                AboutButton.Foreground = foreground;
-                TitleBarText.Foreground = foreground;
-                RefreshButton.Foreground = foreground;
-
-                BackButton.Foreground = BackButton.IsEnabled ? foreground : disabledbutton;
-                ForwardButton.Foreground = ForwardButton.IsEnabled ? foreground : disabledbutton;
-
 
                 if (AppWindowTitleBar.IsCustomizationSupported() && AppWindow.TitleBar.ExtendsContentIntoTitleBar)
                 {
-                    AppWindow.TitleBar.ButtonForegroundColor = foreground.Color;
-                    AppWindow.TitleBar.ButtonInactiveForegroundColor = disabledbutton.Color;
+                    AppWindow.TitleBar.ButtonForegroundColor = m_CaptionButtonForegroundBrush.Color;
+                    AppWindow.TitleBar.ButtonInactiveForegroundColor = m_CaptionButtonDisabledForegroundBrush.Color;
                 }
+
+                SetControlStyles(); //Force update the style on the title buttons.
             }
+        }
+
+        private void SetControlStyles()
+        {
+            AboutButton.Foreground = m_CaptionButtonForegroundBrush;
+            TitleBarText.Foreground = m_CaptionButtonForegroundBrush;
+            
+
+            BackButton.Foreground = ViewModel.CanGoBack ? m_CaptionButtonForegroundBrush : m_CaptionButtonDisabledForegroundBrush;
+            ForwardButton.Foreground = ViewModel.CanGoForward ? m_CaptionButtonForegroundBrush : m_CaptionButtonDisabledForegroundBrush;
+            RefreshButton.Foreground = ViewModel.CanRefreshPage ? m_CaptionButtonForegroundBrush: m_CaptionButtonDisabledForegroundBrush;
+            BackgroundOperationsButton.Foreground = m_CaptionButtonForegroundBrush;
+            
         }
 
         private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
         {
             m_IsWindowDeactivated = args.WindowActivationState == WindowActivationState.Deactivated;
-            SetControlStyles();
+            UpdateRuntimeBrushes();
         }
 
         private void TitleBar_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            SetDragRegionForCustomTitleBar();
-        }
-
-        private void BackgroundTaskCommandBar_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             SetDragRegionForCustomTitleBar();
         }
@@ -213,6 +242,10 @@ namespace SanteDB.Client.WinUI
             SetDragRegionForCustomTitleBar();
         }
 
+        /// <summary>
+        /// Gets the scaling factor for windows. We cannot cache this since the user might adjust the scaling factor or drag our window to a monitor with different scaling.
+        /// </summary>
+        /// <returns></returns>
         private (double scaleX, double scaleY) GetScalingFactor()
         {
             var displayarea = DisplayArea.GetFromWindowId(m_WindowId, DisplayAreaFallback.Primary);
@@ -242,6 +275,9 @@ namespace SanteDB.Client.WinUI
             return (scalefactorpercent(dpix), scalefactorpercent(dpiy));
         }
 
+        /// <summary>
+        /// Calculates the real sizes of the drag regions and updates the window's drag regions acordingly.
+        /// </summary>
         private void SetDragRegionForCustomTitleBar()
         {
             if (AppWindowTitleBar.IsCustomizationSupported() && AppWindow.TitleBar.ExtendsContentIntoTitleBar)
@@ -305,11 +341,12 @@ namespace SanteDB.Client.WinUI
 
         private void CoreWebView2_HistoryChanged(Microsoft.Web.WebView2.Core.CoreWebView2 sender, object args)
         {
-            BackButton.IsEnabled = sender.CanGoBack;
-            ForwardButton.IsEnabled = sender.CanGoForward;
+            ViewModel.CanGoBack = sender.CanGoBack;
+            ViewModel.CanGoForward = sender.CanGoForward;
+
+            //BackButton.IsEnabled = sender.CanGoBack;
+            //ForwardButton.IsEnabled = sender.CanGoForward;
         }
-
-
 
         private void MainWindow_Closed(object sender, WindowEventArgs args)
         {
@@ -323,20 +360,23 @@ namespace SanteDB.Client.WinUI
             }
         }
 
-        private void BackButton_Click(object sender, RoutedEventArgs e)
-        {
-            Browser.GoBack();
-        }
+        //private void BackButton_Click(object sender, RoutedEventArgs e)
+        //{
+        //    ViewModel.GoBackCommand.Execute(sender);
+        //    //Browser.GoBack();
+        //}
 
-        private void ForwardButton_Click(object sender, RoutedEventArgs e)
-        {
-            Browser.GoForward();
-        }
+        //private void ForwardButton_Click(object sender, RoutedEventArgs e)
+        //{
+        //    ViewModel.GoForwardCommand.Execute(sender);
+        //    //Browser.GoForward();
+        //}
 
-        private void RefreshButton_Click(object sender, RoutedEventArgs e)
-        {
-            Browser.Reload();
-        }
+        //private void RefreshButton_Click(object sender, RoutedEventArgs e)
+        //{
+        //    ViewModel.RefreshPageCommand.Execute(sender);
+        //    //Browser.Reload();
+        //}
 
         private void Browser_CoreWebView2Initialized(WebView2 sender, CoreWebView2InitializedEventArgs args)
         {
@@ -354,13 +394,15 @@ namespace SanteDB.Client.WinUI
             Browser.CoreWebView2.WebResourceRequested += CoreWebView2_WebResourceRequested;
             Browser.CoreWebView2.DocumentTitleChanged += CoreWebView2_DocumentTitleChanged;
             Browser.CoreWebView2.ContextMenuRequested += CoreWebView2_ContextMenuRequested;
-            RefreshButton.IsEnabled = true;
+
+            ViewModel.CanRefreshPage = true;
+
 #if DEBUG
             Browser.CoreWebView2.OpenDevToolsWindow();
 #endif
         }
 
-        private async void CoreWebView2_ContextMenuRequested(CoreWebView2 sender, CoreWebView2ContextMenuRequestedEventArgs args)
+        private void CoreWebView2_ContextMenuRequested(CoreWebView2 sender, CoreWebView2ContextMenuRequestedEventArgs args)
         {
             var menunames = args.MenuItems.Select(m => m.Name).ToList();
             
@@ -379,8 +421,9 @@ namespace SanteDB.Client.WinUI
 
         private void CoreWebView2_DocumentTitleChanged(CoreWebView2 sender, object args)
         {
-            this.Title = sender.DocumentTitle;
-            TitleBarText.Text = this.Title;
+            ViewModel.Title = sender.DocumentTitle;
+            //this.Title = sender.DocumentTitle;
+            //TitleBarText.Text = this.Title;
             SetDragRegionForCustomTitleBar();
         }
 
@@ -506,7 +549,6 @@ namespace SanteDB.Client.WinUI
 
         private string? _Version;
 
-
         private string? GetAssemblyVersion()
         {
             if (null != _Version)
@@ -532,9 +574,6 @@ namespace SanteDB.Client.WinUI
 
         private string? GetAboutDialogTitle()
             => "About SanteDB for Windows®️";
-
-        private IApplicationServiceContext ApplicationServiceContext => SanteDB.Core.ApplicationServiceContext.Current;
-
 
         private async void Browser_NavigationCompleted(WebView2 sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs args)
         {
@@ -621,6 +660,17 @@ namespace SanteDB.Client.WinUI
                     AlertDialogText.Text = m;
                     await AlertDialog.ShowAsync();
                 });
+            }
+        }
+
+        private void Flyout_Opening(object sender, object e)
+        {
+            if (sender is Flyout flyout)
+            {
+                if (flyout.Content is FrameworkElement fe)
+                {
+                    fe.RequestedTheme = BackgroundOperationsButton.RequestedTheme;
+                }
             }
         }
     }

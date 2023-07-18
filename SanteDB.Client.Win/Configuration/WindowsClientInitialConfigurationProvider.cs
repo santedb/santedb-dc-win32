@@ -118,7 +118,7 @@ namespace SanteDB.Client.Win.Configuration
                     {
                         KeyName ="default",
                         Algorithm = SanteDB.Core.Security.Configuration.SignatureAlgorithm.HS256,
-                        HmacSecret = "@SanteDBDefault$$$2021"
+                        HmacSecret = "QUFCN0ZDQjk2ODU1MDkwODIzNTIxREM2OEIxRTA5RDgzMUQ3MkY1RTk2MzAzNzRCMjU0ODdBMUFCQzUzRDAzMjYyMjQ1REE0RDA1MUMyRkMzOEVGMkNCMjBCM0FDQzRBRjE2MTdEQzUwQ0U4NDJGOUFFOEIzMjQzRTQ2MUNCMTE="
                     }
                 }
             });

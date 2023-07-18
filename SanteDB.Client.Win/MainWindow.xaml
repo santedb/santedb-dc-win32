@@ -11,6 +11,7 @@
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     xmlns:vm="using:SanteDB.Client.Win.ViewModels"
     mc:Ignorable="d"
+    Title="{x:Bind ViewModel.WindowTitle, Mode=OneWay}"
     >
     <Grid>
         <Grid.RowDefinitions>
@@ -29,10 +30,10 @@
                     <ColumnDefinition Width="auto" x:Name="TitleBarCommandBarArea" />
                     <ColumnDefinition Width="1*" x:Name="TitleBarLeftDragArea" />
                 </Grid.ColumnDefinitions>
-                <CommandBar DefaultLabelPosition="Collapsed" TabIndex="2" Grid.Column="1" Margin="8,0" IsDynamicOverflowEnabled="True">
-                    <AppBarButton Icon="Back" Label="Back" x:Name="BackButton" Click="BackButton_Click" IsEnabled="false" />
-                    <AppBarButton Icon="Forward" Label="Forward" x:Name="ForwardButton" Click="ForwardButton_Click" IsEnabled="false" />
-                    <AppBarButton Icon="Refresh" Label="Reload" x:Name="RefreshButton" Click="RefreshButton_Click" IsEnabled="false" />
+                <CommandBar DefaultLabelPosition="Collapsed" TabIndex="2" Grid.Column="1" Margin="8,0" IsDynamicOverflowEnabled="True" x:Name="AppCommandBar">
+                    <AppBarButton Icon="Back" Label="Back" x:Name="BackButton" Command="{x:Bind ViewModel.GoBackCommand}" />
+                    <AppBarButton Icon="Forward" Label="Forward" x:Name="ForwardButton" Command="{x:Bind ViewModel.GoForwardCommand}" />
+                    <AppBarButton Icon="Refresh" Label="Reload" x:Name="RefreshButton" Command="{x:Bind ViewModel.RefreshPageCommand}" />
                     <CommandBar.SecondaryCommands>
                         <AppBarButton Icon="Help" Label="About" x:Name="AboutButton" Click="AboutButton_Click" />
                     </CommandBar.SecondaryCommands>
@@ -40,7 +41,7 @@
                 <Border Grid.Column="2" />
             </Grid>
             <Border Grid.Column="1">
-                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextAlignment="Center" x:Name="TitleBarText" Text="SanteDB" Grid.Column="2" VerticalAlignment="Center" Margin="16,8" />
+                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextAlignment="Center" x:Name="TitleBarText" Text="{x:Bind ViewModel.WindowTitle, Mode=OneWay}" Grid.Column="2" VerticalAlignment="Center" Margin="16,8" />
             </Border>
             <Grid Grid.Column="2">
                 <Grid.ColumnDefinitions>
@@ -51,9 +52,6 @@
                 </Grid.ColumnDefinitions>
                 <Border Grid.Column="0" />
                 <Button Grid.Column="2" x:Name="BackgroundOperationsButton" Margin="10, 0" Style="{StaticResource DefaultButtonStyle}" Click="BackgroundOperationsButton_Click">
-                    <VisualStateManager.VisualStateGroups>
-                        
-                    </VisualStateManager.VisualStateGroups>
                     <Button.Content>
                         <StackPanel Orientation="Vertical">
                             <TextBlock Style="{ThemeResource CaptionTextBlockStyle}">2 Pending Operations</TextBlock>
@@ -72,12 +70,7 @@
                         </ResourceDictionary>
                     </Button.Resources>
                     <Button.Flyout>
-                        <Flyout ShowMode="Standard" AreOpenCloseAnimationsEnabled="true">
-                            <!--<Flyout.FlyoutPresenterStyle>
-                                <Style TargetType="FlyoutPresenter" BasedOn="{StaticResource DefaultFlyoutPresenterStyle}">
-                                    <Setter Property="Background" Value="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" />
-                                </Style>
-                            </Flyout.FlyoutPresenterStyle>-->
+                        <Flyout ShowMode="Standard" AreOpenCloseAnimationsEnabled="true" Opening="Flyout_Opening">
                             <StackPanel Orientation="Vertical" MinWidth="300" MaxWidth="500" Spacing="10">
                                 <Border>
                                     <Grid>
@@ -103,7 +96,7 @@
                         </Flyout>
                     </Button.Flyout>
                 </Button>
-               
+
                 <Border Grid.Column="1" />
             </Grid>
         </Grid>
