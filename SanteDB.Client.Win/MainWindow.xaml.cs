@@ -13,6 +13,7 @@ using SanteDB.Client.Win;
 using SanteDB.Client.Win.ViewModels;
 using SanteDB.Core;
 using SanteDB.Core.Services;
+using SanteDB.Core.Services.Impl;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -40,6 +41,8 @@ namespace SanteDB.Client.WinUI
         private nint m_Hwnd;
         private WindowId m_WindowId;
         private string? m_Magic;
+        private bool m_IsStarted;
+
 
         private JsonSerializer m_JsonSerializer;
 
@@ -66,11 +69,13 @@ namespace SanteDB.Client.WinUI
         public MainWindow()
         {
             m_FirstRender = true;
+            m_IsStarted = false;
 
             this.InitializeComponent();
 
             ViewModel.MainWindow = this;
             ViewModel.Browser = Browser;
+            SetupTimers();
 
             m_WindowId = AppWindow.Id;
             m_Hwnd = Win32Interop.GetWindowFromWindowId(m_WindowId);
@@ -133,6 +138,40 @@ namespace SanteDB.Client.WinUI
         /// Gets the ViewModel that is responsible for handling this window.
         /// </summary>
         internal MainWindowViewModel ViewModel { get; } = new();
+
+        internal DispatcherTimer _BackgroundTaskTimer;
+
+        private void SetupTimers()
+        {
+            _BackgroundTaskTimer = new DispatcherTimer();
+            _BackgroundTaskTimer.Interval = TimeSpan.FromSeconds(5);
+            _BackgroundTaskTimer.Tick += BackgroundTaskTimer_Tick;
+            _BackgroundTaskTimer.Start();
+
+        }
+
+        private void BackgroundTaskTimer_Tick(object? sender, object e)
+        {
+            if (ViewModel.BackgroundTasks.Count > 0)
+            {
+                var lsttoremove = new System.Collections.Generic.List<BackgroundTaskStatus>(ViewModel.BackgroundTasks.Count);
+                var now = DateTimeOffset.UtcNow;
+
+                foreach (var task in ViewModel.BackgroundTasks)
+                {
+                    if (((now - task.LastUpdated).TotalSeconds >= 10)
+                        || task.Progress >= 100f)
+                    {
+                        lsttoremove.Add(task);
+                    }
+                }
+
+                foreach(var remove in lsttoremove)
+                {
+                    ViewModel.BackgroundTasks.Remove(remove);
+                }
+            }
+        }
 
         /// <summary>
         /// WNDPROC for subclassed window 
@@ -217,13 +256,13 @@ namespace SanteDB.Client.WinUI
         {
             AboutButton.Foreground = m_CaptionButtonForegroundBrush;
             TitleBarText.Foreground = m_CaptionButtonForegroundBrush;
-            
+
 
             BackButton.Foreground = ViewModel.CanGoBack ? m_CaptionButtonForegroundBrush : m_CaptionButtonDisabledForegroundBrush;
             ForwardButton.Foreground = ViewModel.CanGoForward ? m_CaptionButtonForegroundBrush : m_CaptionButtonDisabledForegroundBrush;
-            RefreshButton.Foreground = ViewModel.CanRefreshPage ? m_CaptionButtonForegroundBrush: m_CaptionButtonDisabledForegroundBrush;
+            RefreshButton.Foreground = ViewModel.CanRefreshPage ? m_CaptionButtonForegroundBrush : m_CaptionButtonDisabledForegroundBrush;
             BackgroundOperationsButton.Foreground = m_CaptionButtonForegroundBrush;
-            
+
         }
 
         private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
@@ -278,7 +317,7 @@ namespace SanteDB.Client.WinUI
         /// <summary>
         /// Calculates the real sizes of the drag regions and updates the window's drag regions acordingly.
         /// </summary>
-        private void SetDragRegionForCustomTitleBar()
+        internal void SetDragRegionForCustomTitleBar()
         {
             if (AppWindowTitleBar.IsCustomizationSupported() && AppWindow.TitleBar.ExtendsContentIntoTitleBar)
             {
@@ -344,6 +383,8 @@ namespace SanteDB.Client.WinUI
             ViewModel.CanGoBack = sender.CanGoBack;
             ViewModel.CanGoForward = sender.CanGoForward;
 
+            
+
             //BackButton.IsEnabled = sender.CanGoBack;
             //ForwardButton.IsEnabled = sender.CanGoForward;
         }
@@ -405,17 +446,17 @@ namespace SanteDB.Client.WinUI
         private void CoreWebView2_ContextMenuRequested(CoreWebView2 sender, CoreWebView2ContextMenuRequestedEventArgs args)
         {
             var menunames = args.MenuItems.Select(m => m.Name).ToList();
-            
+
             var menulist = args.MenuItems;
 
-            for(int i = 0; i < menulist.Count; i++)
+            for (int i = 0; i < menulist.Count; i++)
             {
                 if (!s_AllowedContextMenuItems.Contains(menulist[i].Name))
                 {
                     menulist.RemoveAt(i--);
                 }
             }
-            
+
 
         }
 
@@ -602,6 +643,63 @@ namespace SanteDB.Client.WinUI
 
         }
 
+        private Flyout GetBackgroundTaskFlyout()
+        {
+
+            var flyout = new Microsoft.UI.Xaml.Controls.Flyout()
+            {
+                ShowMode = Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowMode.Transient,
+                AreOpenCloseAnimationsEnabled = true
+            };
+
+            flyout.Opening += Flyout_Opening;
+            flyout.Closed += Flyout_Closed;
+
+            var ir = new Microsoft.UI.Xaml.Controls.ItemsRepeater()
+            {
+                MinWidth = 300,
+                MaxWidth = 500,
+                ItemsSource = ViewModel.BackgroundTasks,
+                ItemTemplate = WindowGrid.Resources["BackgroundTaskStatusItemTemplate"] as DataTemplate
+            };
+
+            
+
+            ir.Layout = new Microsoft.UI.Xaml.Controls.StackLayout()
+            {
+                Orientation = Orientation.Vertical,
+                Spacing = 10
+            };
+
+            flyout.Content = ir;
+
+            return flyout;
+
+        }
+
+        private void Flyout_Closed(object? sender, object e)
+        {
+            //TODO: Clean up the flyout
+            if (sender is Flyout flyout)
+            {
+                (flyout as IDisposable)?.Dispose();
+            }
+            BackgroundOperationsButton.Flyout = GetBackgroundTaskFlyout();
+        }
+
+        public void SetStatus(string? taskIdentifier, string? text, float? progress)
+        {
+            if (!m_IsStarted)
+            {
+                if (null != text && taskIdentifier == nameof(DependencyServiceManager))
+                {
+                    ShowSplashStatusText(text!, progress);
+                }
+            }
+
+            SetBackgroundTask(taskIdentifier, text, progress);
+        }
+
         public void ShowSplashStatusText(string text, float? progress = null)
         {
             if (null == this.DispatcherQueue)
@@ -609,21 +707,86 @@ namespace SanteDB.Client.WinUI
                 return;
             }
 
+            void settextlocal(string t, float? progress = null)
+            {
+                SplashStatusText.Text = t;
+                m_TracerWindow?.AppendText(t);
+
+                if (progress > 0)
+                {
+                    StartupProgress.IsIndeterminate = false;
+                    StartupProgress.Value = progress.Value * 100;
+                }
+            }
+
             if (this.DispatcherQueue.HasThreadAccess)
             {
-                SplashStatusText.Text = text;
-                m_TracerWindow?.AppendText(text);
+                settextlocal(text, progress);
             }
             else
             {
                 var s = text;
+                var p = progress;
                 this.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
                 {
-                    SplashStatusText.Text = s;
-                    m_TracerWindow?.AppendText(s);
+                    settextlocal(s, p);
                 });
             }
 
+        }
+
+        public void SetBackgroundTask(string? taskIdentifier, string? text, float? progress = null)
+        {
+            if (null == this.DispatcherQueue)
+            {
+                return;
+            }
+
+            void settask(string? ti, string? t, float? p)
+            {
+                var task = ViewModel.BackgroundTasks.FirstOrDefault(bg => bg.TaskIdentifier == ti);
+
+                if (null != p)
+                {
+                    p *= 100f;
+                }
+                else
+                {
+                    p = -1;
+                }
+
+                if (null == task)
+                {
+                    task = new()
+                    {
+                        TaskIdentifier = ti,
+                        Text = t,
+                        Progress = p.Value,
+                        Dismissed = false,
+                        LastUpdated = DateTimeOffset.UtcNow
+                    };
+
+                    ViewModel.BackgroundTasks.Add(task);
+                }
+                else
+                {
+                    task.Text = t;
+                    task.Progress = p.Value;
+                    task.LastUpdated = DateTimeOffset.UtcNow;
+                }
+            };
+
+            if (DispatcherQueue.HasThreadAccess)
+            {
+                settask(taskIdentifier, text, progress);
+            }
+            else
+            {
+                this.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
+                {
+                    settask(taskIdentifier, text, progress);
+                });
+            }
         }
 
         public void Start(string uri, string magicValue)
@@ -632,6 +795,7 @@ namespace SanteDB.Client.WinUI
             {
                 m_Magic = magicValue;
                 Browser.Source = new Uri(uri);
+                m_IsStarted = true;
             }
             else
             {
@@ -641,6 +805,7 @@ namespace SanteDB.Client.WinUI
                 {
                     m_Magic = m;
                     Browser.Source = u;
+                    m_IsStarted = true;
                 });
             }
         }
@@ -663,7 +828,7 @@ namespace SanteDB.Client.WinUI
             }
         }
 
-        private void Flyout_Opening(object sender, object e)
+        private void Flyout_Opening(object? sender, object e)
         {
             if (sender is Flyout flyout)
             {

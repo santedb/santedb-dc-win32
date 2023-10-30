@@ -21,5 +21,10 @@ namespace SanteDB.Client.Win.ViewModels
         bool dismissed = false;
 
         public string? TaskIdentifier { get; set; }
+
+        /// <summary>
+        /// Time the task was added to account for stale tasks.
+        /// </summary>
+        public DateTimeOffset LastUpdated { get; set; }
     }
 }

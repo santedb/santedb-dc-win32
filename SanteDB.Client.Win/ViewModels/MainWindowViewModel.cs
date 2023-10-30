@@ -5,6 +5,7 @@ using Microsoft.Web.WebView2.Core;
 using SanteDB.Client.WinUI;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using Vanara.Extensions.Reflection;
 
 namespace SanteDB.Client.Win.ViewModels
 {
@@ -87,7 +88,33 @@ namespace SanteDB.Client.Win.ViewModels
         [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshPageCommand))]
         bool canRefreshPage = false;
 
+        [ObservableProperty]
+        string backgroundTasksButtonText;
+
         internal MainWindow MainWindow { get; set; }
         internal WebView2 Browser { get; set; }
+
+        public MainWindowViewModel()
+        {
+            BackgroundTasks.CollectionChanged += BackgroundTasks_CollectionChanged;
+        }
+
+        private void BackgroundTasks_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            if (null == BackgroundTasks || BackgroundTasks.Count == 0)
+            {
+                BackgroundTasksButtonText = "No Pending Operations";
+            }
+            else if (BackgroundTasks.Count == 1)
+            {
+                BackgroundTasksButtonText = "1 Pending Operation";
+            }
+            else
+            {
+                BackgroundTasksButtonText = $"{BackgroundTasks.Count} Pending Operations";
+            }
+
+            MainWindow.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.High, () => MainWindow.SetDragRegionForCustomTitleBar());
+        }
     }
 }

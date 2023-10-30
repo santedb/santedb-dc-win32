@@ -12,15 +12,12 @@ namespace SanteDB.Client.WinUI
     {
         private static readonly string s_DefaultTaskIdentifier = string.Empty;
 
-        readonly List<TaskStatus> _Statuses;
-
         public string ServiceName => "Windows Interaction Provider";
 
         readonly MainWindow m_MainWindow;
 
         public WindowsInteractionProvider(MainWindow mainWindow)
         {
-            _Statuses = new ();
             m_MainWindow = mainWindow;
         }
 
@@ -48,21 +45,8 @@ namespace SanteDB.Client.WinUI
             System.Diagnostics.Debug.WriteLine(statusText);
 #endif
 
-            if (progressIndicator > 0)
-            {
-                //Debugger.Break();
-            }
-
-            m_MainWindow.ShowSplashStatusText($"Starting SanteDB - {Math.Round(progressIndicator, 2)} :: {taskIdentifier}");
-        }
-
-        private class TaskStatus
-        {
-            public string TaskIdentifier { get; set; }
-            public string StatusText { get; set; }
-            public int Progress { get; set; }
-            public DateTimeOffset CreatedAt { get; set; }
-
+            //m_MainWindow.ShowSplashStatusText($"Starting SanteDB - {Math.Round(progressIndicator, 2)} :: {taskIdentifier}");
+            m_MainWindow.SetStatus(taskIdentifier, statusText, progressIndicator);
         }
     }
 }
