@@ -327,8 +327,8 @@ namespace SanteDB.Client.WinUI
 
                 double scaleY(double value) => value * scalingfactor.scaleY;
 
-                TitleBarLeftInset.Width = new GridLength(AppWindow.TitleBar.LeftInset / scalingfactor.scaleX);
-                TitleBarRightInset.Width = new GridLength(AppWindow.TitleBar.RightInset / scalingfactor.scaleX);
+                TitleBarLeftInset.Width = new GridLength(Math.Max(0, AppWindow.TitleBar.LeftInset / scalingfactor.scaleX));
+                TitleBarRightInset.Width = new GridLength(Math.Max(0, AppWindow.TitleBar.RightInset / scalingfactor.scaleX));
 
                 RectInt32 dragrectl, dragrectc, dragrectmr, dragrectr;
 
