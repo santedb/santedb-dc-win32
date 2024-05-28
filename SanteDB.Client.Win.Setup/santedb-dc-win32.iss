@@ -4,14 +4,14 @@
 #define MyAppName "SanteDB Windows dCDR Client"
 #define MyAppPublisher "SanteDB Community"
 #define MyAppURL "http://santesuite.org"
-#define MyAppVersion "2.0.68"
-#define Platform "x86"
+#define MyAppVersion "3.0.1200"
+#define Platform "x64"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
 ; Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId={{89E5D303-441E-4742-970A-C2C240C89AFF}
+AppId={89E5D303-441E-4742-970A-C2C240C89AFF}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
