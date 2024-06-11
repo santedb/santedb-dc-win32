@@ -51,7 +51,7 @@
     <PackageReference Include="Vanara.PInvoke.SHCore" Version="4.0.1" />
     <PackageReference Include="Nito.AsyncEx.Context" Version="5.1.2" />
     <PackageReference Include="SQLitePCLRaw.provider.e_sqlite3mc" Version="2.1.8" Exclude="Build,Analyzers" />
-    <PackageReference Include="SQLiteSpellfix.lib.e_sqlite3mc" Version="2.2.0" Exclude="Build,Analyzers" />
+    <PackageReference Include="SQLiteSpellfix.lib.e_sqlite3mc" Version="2.2.1" Exclude="Build,Analyzers" />
   </ItemGroup>
 
   <ItemGroup>
