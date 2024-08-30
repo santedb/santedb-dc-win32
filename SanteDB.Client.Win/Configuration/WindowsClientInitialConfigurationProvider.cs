@@ -61,6 +61,7 @@ using SanteDB.Client.WinUI;
 using SanteDB.Client.Batteries.Services;
 using SanteDB.BusinessRules.JavaScript;
 using SanteDB.Security.Certs.BouncyCastle;
+using SanteDB.Client.Disconnected.Services;
 
 namespace SanteDB.Client.Win.Configuration
 {
@@ -73,6 +74,11 @@ namespace SanteDB.Client.Win.Configuration
             var appServiceSection = configuration.GetSection<ApplicationServiceContextConfigurationSection>();
             var instanceName = appServiceSection.InstanceName;
             var localDataPath = AppDomain.CurrentDomain.GetData("DataDirectory")?.ToString();
+
+            if (null == localDataPath)
+            {
+                throw new ApplicationException("Application bug exists. DataDirectory was not set before configuration provider was called. Ensure the DataDirectory data variable in the app domain is set before the config provider is initialized.");
+            }
 
             appServiceSection.ServiceProviders.AddRange(new List<TypeReferenceConfiguration>() {
                     new TypeReferenceConfiguration(typeof(AesSymmetricCrypographicProvider)),
@@ -113,7 +119,8 @@ namespace SanteDB.Client.Win.Configuration
                     new TypeReferenceConfiguration(typeof(DefaultBarcodeProviderService)),
                     new TypeReferenceConfiguration(typeof(FileSystemDispatcherQueueService)),
                     new TypeReferenceConfiguration(typeof(BouncyCastleCertificateGenerator)),
-                    new TypeReferenceConfiguration(typeof(RepositoryEntitySource))
+                    new TypeReferenceConfiguration(typeof(RepositoryEntitySource)),
+                    new TypeReferenceConfiguration(typeof(FileSystemCdssLibraryRepository)),
             });
 
             appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("input.name", "simple"));
@@ -244,7 +251,7 @@ namespace SanteDB.Client.Win.Configuration
             var backupSection = new BackupConfigurationSection()
             {
                 PrivateBackupLocation = Path.Combine(localDataPath, "backup"),
-                PublicBackupLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "santedb", "dc-win32", "backup")
+                PublicBackupLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "santedb", "dc-win32", "backup") /* we use lowercase santedb in case we are on a case-sensitive file system */
             };
 
             configuration.Sections.Add(new RestClientConfigurationSection()
