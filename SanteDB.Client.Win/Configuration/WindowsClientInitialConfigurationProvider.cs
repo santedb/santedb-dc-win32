@@ -59,6 +59,8 @@ using System.Text;
 using System.Threading.Tasks;
 using SanteDB.Client.WinUI;
 using SanteDB.Client.Batteries.Services;
+using SanteDB.BusinessRules.JavaScript;
+using SanteDB.Security.Certs.BouncyCastle;
 
 namespace SanteDB.Client.Win.Configuration
 {
@@ -71,6 +73,48 @@ namespace SanteDB.Client.Win.Configuration
             var appServiceSection = configuration.GetSection<ApplicationServiceContextConfigurationSection>();
             var instanceName = appServiceSection.InstanceName;
             var localDataPath = AppDomain.CurrentDomain.GetData("DataDirectory")?.ToString();
+
+            appServiceSection.ServiceProviders.AddRange(new List<TypeReferenceConfiguration>() {
+                    new TypeReferenceConfiguration(typeof(AesSymmetricCrypographicProvider)),
+                    new TypeReferenceConfiguration(typeof(InMemoryTickleService)),
+                    new TypeReferenceConfiguration(typeof(DefaultNetworkInformationService)),
+                    new TypeReferenceConfiguration(typeof(SHA256PasswordHashingService)),
+                    new TypeReferenceConfiguration(typeof(DefaultPolicyDecisionService)),
+                    new TypeReferenceConfiguration(typeof(MemoryAdhocCacheService)),
+                    new TypeReferenceConfiguration(typeof(AppletLocalizationService)),
+                    new TypeReferenceConfiguration(typeof(AppletBusinessRulesDaemon)),
+                    new TypeReferenceConfiguration(typeof(DefaultUpstreamManagementService)),
+                    new TypeReferenceConfiguration(typeof(DefaultUpstreamIntegrationService)),
+                    new TypeReferenceConfiguration(typeof(DefaultUpstreamAvailabilityProvider)),
+                    new TypeReferenceConfiguration(typeof(MemoryCacheService)),
+                    new TypeReferenceConfiguration(typeof(DefaultThreadPoolService)),
+                    new TypeReferenceConfiguration(typeof(ConsoleUserInterfaceInteractionProvider)),
+                    new TypeReferenceConfiguration(typeof(MemoryQueryPersistenceService)),
+                    new TypeReferenceConfiguration(typeof(FileSystemDispatcherQueueService)),
+                    new TypeReferenceConfiguration(typeof(SimplePatchService)),
+                    new TypeReferenceConfiguration(typeof(DefaultBackupManager)),
+                    new TypeReferenceConfiguration(typeof(AppletBiRepository)),
+                    new TypeReferenceConfiguration(typeof(OAuthClient)),
+                    new TypeReferenceConfiguration(typeof(MemorySessionManagerService)),
+                    new TypeReferenceConfiguration(typeof(UpstreamUpdateManagerService)), // AmiUpdateManager
+                    new TypeReferenceConfiguration(typeof(UpstreamIdentityProvider)),
+                    new TypeReferenceConfiguration(typeof(UpstreamApplicationIdentityProvider)),
+                    new TypeReferenceConfiguration(typeof(UpstreamSecurityChallengeProvider)), // AmiSecurityChallengeProvider
+                    new TypeReferenceConfiguration(typeof(UpstreamRoleProviderService)),
+                    new TypeReferenceConfiguration(typeof(UpstreamSecurityRepository)),
+                    new TypeReferenceConfiguration(typeof(UpstreamRepositoryFactory)),
+                    new TypeReferenceConfiguration(typeof(UpstreamPolicyInformationService)),
+                    new TypeReferenceConfiguration(typeof(DataPolicyFilterService)),
+                    new TypeReferenceConfiguration(typeof(DefaultOperatingSystemInfoService)),
+                    new TypeReferenceConfiguration(typeof(AppletSubscriptionRepository)),
+                    new TypeReferenceConfiguration(typeof(InMemoryPivotProvider)),
+                    new TypeReferenceConfiguration(typeof(AuditDaemonService)),
+                    new TypeReferenceConfiguration(typeof(DefaultDataSigningService)),
+                    new TypeReferenceConfiguration(typeof(DefaultBarcodeProviderService)),
+                    new TypeReferenceConfiguration(typeof(FileSystemDispatcherQueueService)),
+                    new TypeReferenceConfiguration(typeof(BouncyCastleCertificateGenerator)),
+                    new TypeReferenceConfiguration(typeof(RepositoryEntitySource))
+            });
 
             appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("input.name", "simple"));
             appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("input.address", "text"));

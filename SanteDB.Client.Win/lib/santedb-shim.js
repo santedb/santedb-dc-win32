@@ -122,7 +122,10 @@ __SanteDBAppService.IsClinicalAvailable = function() {
     }
 };
 
-__SanteDBAppService.BarcodeScan = function(){
+__SanteDBAppService.BarcodeScan = function () {
+
+    //Returns promise
+
     return null;
 };
 
