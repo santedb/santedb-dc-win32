@@ -439,6 +439,22 @@ namespace SanteDB.Client.WinUI
         //    //Browser.Reload();
         //}
 
+        public Task<string> ScanBarcodeAsync()
+        {
+            var tcs = new TaskCompletionSource<string>();
+
+            void on_closed(object? sender, object state)
+            {
+                BarcodeScannerPopup.Closed -= on_closed;
+                tcs.SetResult(BarcodeScanner.Result);
+            }
+
+            BarcodeScannerPopup.Closed += on_closed;
+            BarcodeScannerPopup.IsOpen = true;
+
+            return tcs.Task;
+        }
+
         private void Browser_CoreWebView2Initialized(WebView2 sender, CoreWebView2InitializedEventArgs args)
         {
             if (null != args.Exception)
@@ -509,6 +525,9 @@ namespace SanteDB.Client.WinUI
                     case "/_appservice/strings":
                         await HandleStringRequestAsync(sender, args);
                         break;
+                    case "/_appservice/barcodescan":
+                        await HandleBarcodeScanRequestAsync(sender, args);
+                        break;
                     default:
                         break;
                 }
@@ -521,6 +540,22 @@ namespace SanteDB.Client.WinUI
             }
 
 
+        }
+
+        private async Task HandleBarcodeScanRequestAsync(CoreWebView2 sender, CoreWebView2WebResourceRequestedEventArgs args)
+        {
+            var barcode = await ScanBarcodeAsync();
+
+            if (null == barcode)
+            {
+                args.Response = sender.Environment.CreateWebResourceResponse(null, 204, "NO CONTENT", "Content-Type: application/json");
+            }
+            else
+            {
+                var stream = new MemoryStream(Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(barcode)));
+                args.Response = sender.Environment.CreateWebResourceResponse(stream.AsRandomAccessStream(), 200, "OK", "Content-Type: application/json");
+            }
+           
         }
 
         private Task HandleStringRequestAsync(CoreWebView2 sender, CoreWebView2WebResourceRequestedEventArgs args)

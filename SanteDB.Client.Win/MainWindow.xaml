@@ -10,6 +10,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     xmlns:vm="using:SanteDB.Client.Win.ViewModels"
+    xmlns:lc="using:SanteDB.Client.Win.Controls"
     mc:Ignorable="d"
     Title="{x:Bind ViewModel.WindowTitle, Mode=OneWay}"
     >
@@ -119,5 +120,13 @@
         <ContentDialog x:Name="AlertDialog" Title="Alert" IsPrimaryButtonEnabled="True" DefaultButton="Primary" PrimaryButtonText="Ok">
             <TextBlock x:Name="AlertDialogText"></TextBlock>
         </ContentDialog>
+        <Popup x:Name="BarcodeScannerPopup" IsLightDismissEnabled="True" LightDismissOverlayMode="Auto" ShouldConstrainToRootBounds="False" HorizontalAlignment="Center" HorizontalOffset="-300" VerticalOffset="48">
+            <Popup.SystemBackdrop>
+                <DesktopAcrylicBackdrop />
+            </Popup.SystemBackdrop>
+            <Border BorderBrush="{ThemeResource SystemColorControlAccentBrush}" BorderThickness="1" CornerRadius="{StaticResource OverlayCornerRadius}">
+                <lc:BarcodeScanner x:Name="BarcodeScanner" />
+            </Border>
+        </Popup>
     </Grid>
 </Window>

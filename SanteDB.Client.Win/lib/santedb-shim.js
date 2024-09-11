@@ -52,10 +52,10 @@ __SanteDBAppService.GetStatus = async function () {
 })()
 
 __SanteDBAppService.GetVersion = function () {
-    if (__SanteDBAppService && __SanteDBAppService._state){
+    if (__SanteDBAppService && __SanteDBAppService._state) {
         return __SanteDBAppService._state.version;
     }
-    else{
+    else {
         return null;
     }
 };
@@ -95,38 +95,60 @@ else {
     };
 }
 
-__SanteDBAppService.GetOnlineState = function() {
-    if (__SanteDBAppService && __SanteDBAppService._state){
+__SanteDBAppService.GetOnlineState = function () {
+    if (__SanteDBAppService && __SanteDBAppService._state) {
         return __SanteDBAppService._state.online;
     }
-    else{
+    else {
         return false;
     }
 };
 
-__SanteDBAppService.IsAdminAvailable = function() {
-    if (__SanteDBAppService && __SanteDBAppService._state){
+__SanteDBAppService.IsAdminAvailable = function () {
+    if (__SanteDBAppService && __SanteDBAppService._state) {
         return __SanteDBAppService._state.ami;
     }
-    else{
+    else {
         return false;
     }
 };
 
-__SanteDBAppService.IsClinicalAvailable = function() {
-    if (__SanteDBAppService && __SanteDBAppService._state){
+__SanteDBAppService.IsClinicalAvailable = function () {
+    if (__SanteDBAppService && __SanteDBAppService._state) {
         return __SanteDBAppService._state.hdsi;
     }
-    else{
+    else {
         return false;
     }
 };
 
-__SanteDBAppService.BarcodeScan = function () {
+__SanteDBAppService.BarcodeScan = async function () {
+    return window.fetch("/_appservice/barcodescan", {
+        method: "GET",
+        mode: "cors",
+        cache: "no-cache",
+        credentials: "same-origin",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        redirect: "follow",
+        referrerPolicy: "no-referrer",
+    }).then(async (response) => {
+        if (response.status === 204) {
+            return null;
+        }
+        else if (response.status === 200) {
+            let result = await response.json();
 
-    //Returns promise
-
-    return null;
+            return result;
+        }
+        else {
+            alert("Failed to scan barcode.");
+        }
+    }, (reason) => {
+        alert("Failed to scan barcode: " + reason);
+        return null;
+    });
 };
 
 __SanteDBAppService.ShowToast = function (text) {
@@ -148,49 +170,49 @@ __SanteDBAppService.ShowToast = function (text) {
         },
         redirect: "follow",
         referrerPolicy: "no-referrer",
-        body: JSON.stringify(toastdata)
+        body: JSON.stringify(toastdata),
     });
 };
 
-__SanteDBAppService.GetClientId = function() {
-    if (__SanteDBAppService && __SanteDBAppService._state){
+__SanteDBAppService.GetClientId = function () {
+    if (__SanteDBAppService && __SanteDBAppService._state) {
         return __SanteDBAppService._state.client_id;
     }
-    else{
+    else {
         return null;
     }
 };
 
-__SanteDBAppService.GetDeviceId = function() {
-    if (__SanteDBAppService && __SanteDBAppService._state){
+__SanteDBAppService.GetDeviceId = function () {
+    if (__SanteDBAppService && __SanteDBAppService._state) {
         return __SanteDBAppService._state.device_id;
     }
-    else{
+    else {
         return null;
     }
 }
 
-__SanteDBAppService.GetRealm = function() {
-    if (__SanteDBAppService && __SanteDBAppService._state){
+__SanteDBAppService.GetRealm = function () {
+    if (__SanteDBAppService && __SanteDBAppService._state) {
         return __SanteDBAppService._state.realm;
     }
-    else{
+    else {
         return null;
     }
 };
 
-__SanteDBAppService.GetLocale = function() {
+__SanteDBAppService.GetLocale = function () {
     if (window.sessionStorage.lang)
         return window.sessionStorage.lang;
     else
         return (navigator.language || navigator.userLanguage).substring(0, 2);
 };
 
-__SanteDBAppService.SetLocale = function(locale) {
+__SanteDBAppService.SetLocale = function (locale) {
     window.sessionStorage.lang = locale;
 };
 
-__SanteDBAppService.GetString = function(stringId) {
+__SanteDBAppService.GetString = function (stringId) {
     if (__SanteDBAppService && __SanteDBAppService.strings) {
         return __SanteDBAppService.strings[stringId];
     }
@@ -199,11 +221,11 @@ __SanteDBAppService.GetString = function(stringId) {
     }
 };
 
-__SanteDBAppService.GetMagic = function() {
-    if (__SanteDBAppService && __SanteDBAppService._state){
+__SanteDBAppService.GetMagic = function () {
+    if (__SanteDBAppService && __SanteDBAppService._state) {
         return __SanteDBAppService._state.magic;
     }
-    else{
+    else {
         return null;
     }
 };
