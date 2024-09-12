@@ -28,13 +28,17 @@ namespace SanteDB.Client.Win.Controls
     {
         readonly SemaphoreSlim _CameraSemaphore;
         readonly DispatcherQueue _DQueue;
+        readonly ZXing.Windows.Compatibility.BarcodeReader _BarcodeReader;
 
         private Popup _ParentPopup;
+
+        
 
 
         public BarcodeScanner()
         {
             _CameraSemaphore = new SemaphoreSlim(1);
+            _BarcodeReader = new();
 
             this.InitializeComponent();
 
@@ -131,9 +135,7 @@ namespace SanteDB.Client.Win.Controls
                 using var bitmap = frame.SoftwareBitmap;
                 using var bitmap2 = SoftwareBitmap.Convert(bitmap, BitmapPixelFormat.Rgba8);
 
-                var reader = new ZXing.Windows.Compatibility.BarcodeReader();
-
-                var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+                using var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
 
                 var encoder = await Windows.Graphics.Imaging.BitmapEncoder.CreateAsync(Windows.Graphics.Imaging.BitmapEncoder.BmpEncoderId, stream);
 
@@ -145,7 +147,7 @@ namespace SanteDB.Client.Win.Controls
 
                 using var drawingbmp = System.Drawing.Bitmap.FromStream(bmpstream) as System.Drawing.Bitmap;
 
-                var result = reader.Decode(drawingbmp);
+                var result = _BarcodeReader.Decode(drawingbmp);
 
                 if (null != result)
                 {
