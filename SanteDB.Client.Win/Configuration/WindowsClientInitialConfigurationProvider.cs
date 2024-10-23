@@ -140,7 +140,8 @@ namespace SanteDB.Client.Win.Configuration
             appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.name.given", "false"));
             appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("allow.patient.religion", "false"));
             appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("allow.patient.ethnicity", "false"));
-            appServiceSection.AppSettings = appServiceSection.AppSettings.OrderBy(o => o.Key).ToList();
+            //appServiceSection.AppSettings = appServiceSection.AppSettings.OrderBy(o => o.Key).ToList();
+            appServiceSection.AppSettings.Sort((a, b) => string.Compare(a?.Key, b?.Key));
 
 
             // Security configuration
