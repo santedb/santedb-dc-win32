@@ -32,6 +32,7 @@ using SanteDB.Client.Configuration.Upstream;
 using SanteDB.Client.Win;
 using SanteDB.Client.Win.ViewModels;
 using SanteDB.Core;
+using SanteDB.Core.Security.Configuration;
 using SanteDB.Core.Services;
 using SanteDB.Core.Services.Impl;
 using System;
@@ -60,11 +61,11 @@ namespace SanteDB.Client.WinUI
         private bool m_FirstRender;
         private nint m_Hwnd;
         private WindowId m_WindowId;
-        private string? m_Magic;
+        //private string? m_Magic;
         private bool m_IsStarted;
 
 
-        private JsonSerializer m_JsonSerializer;
+        //private JsonSerializer m_JsonSerializer;
 
         private TracerOutputWindow? m_TracerWindow;
 
@@ -112,7 +113,7 @@ namespace SanteDB.Client.WinUI
             this.Closed += MainWindow_Closed;
             this.Activated += MainWindow_Activated;
 
-            m_JsonSerializer = new JsonSerializer();
+            //m_JsonSerializer = new JsonSerializer();
 
             AppWindow.SetIcon("Assets\\santedb.ico");
 
@@ -146,6 +147,8 @@ namespace SanteDB.Client.WinUI
 
             //m_TracerWindow = new TracerOutputWindow();
             //m_TracerWindow.Activate();
+
+            Browser.ScanBarcodeCallback = ScanBarcodeAsync;
 
             //Fix for incorrect foregrounds on enabled/disabled controls in the title bar.
             ViewModel.PropertyChanged += (s, e) =>
@@ -402,16 +405,14 @@ namespace SanteDB.Client.WinUI
         {
             ViewModel.CanGoBack = sender.CanGoBack;
             ViewModel.CanGoForward = sender.CanGoForward;
-
-            
-
-            //BackButton.IsEnabled = sender.CanGoBack;
-            //ForwardButton.IsEnabled = sender.CanGoForward;
         }
 
         private void MainWindow_Closed(object sender, WindowEventArgs args)
         {
             Vanara.PInvoke.ComCtl32.RemoveWindowSubclass(m_Hwnd, WindowSubclassProcedure, 0x1);
+
+            m_UISettings.ColorValuesChanged -= UISettings_ColorValuesChanged;
+            m_UISettings.TextScaleFactorChanged -= UISettings_TextScaleFactorChanged;
 
             m_TracerWindow?.Close();
 
@@ -420,24 +421,6 @@ namespace SanteDB.Client.WinUI
                 ApplicationServiceContext.Stop();
             }
         }
-
-        //private void BackButton_Click(object sender, RoutedEventArgs e)
-        //{
-        //    ViewModel.GoBackCommand.Execute(sender);
-        //    //Browser.GoBack();
-        //}
-
-        //private void ForwardButton_Click(object sender, RoutedEventArgs e)
-        //{
-        //    ViewModel.GoForwardCommand.Execute(sender);
-        //    //Browser.GoForward();
-        //}
-
-        //private void RefreshButton_Click(object sender, RoutedEventArgs e)
-        //{
-        //    ViewModel.RefreshPageCommand.Execute(sender);
-        //    //Browser.Reload();
-        //}
 
         public Task<string> ScanBarcodeAsync()
         {
@@ -462,38 +445,15 @@ namespace SanteDB.Client.WinUI
                 throw args.Exception;
             }
 
-            Browser.CoreWebView2.Settings.UserAgent = $"SanteDB-{m_Magic}";
-            Browser.CoreWebView2.Settings.AreHostObjectsAllowed = true;
-            Browser.CoreWebView2.AddWebResourceRequestedFilter("*/_appservice/*", Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext.All);
             Browser.CoreWebView2.HistoryChanged += CoreWebView2_HistoryChanged;
-            Browser.NavigationStarting += Browser_NavigationStarting;
             Browser.NavigationCompleted += Browser_NavigationCompleted;
-            Browser.CoreWebView2.WebResourceRequested += CoreWebView2_WebResourceRequested;
             Browser.CoreWebView2.DocumentTitleChanged += CoreWebView2_DocumentTitleChanged;
-            Browser.CoreWebView2.ContextMenuRequested += CoreWebView2_ContextMenuRequested;
 
             ViewModel.CanRefreshPage = true;
 
 #if DEBUG
             Browser.CoreWebView2.OpenDevToolsWindow();
 #endif
-        }
-
-        private void CoreWebView2_ContextMenuRequested(CoreWebView2 sender, CoreWebView2ContextMenuRequestedEventArgs args)
-        {
-            var menunames = args.MenuItems.Select(m => m.Name).ToList();
-
-            var menulist = args.MenuItems;
-
-            for (int i = 0; i < menulist.Count; i++)
-            {
-                if (!s_AllowedContextMenuItems.Contains(menulist[i].Name))
-                {
-                    menulist.RemoveAt(i--);
-                }
-            }
-
-
         }
 
         private void CoreWebView2_DocumentTitleChanged(CoreWebView2 sender, object args)
@@ -503,145 +463,6 @@ namespace SanteDB.Client.WinUI
             //TitleBarText.Text = this.Title;
             SetDragRegionForCustomTitleBar();
         }
-
-        private async void CoreWebView2_WebResourceRequested(Microsoft.Web.WebView2.Core.CoreWebView2 sender, Microsoft.Web.WebView2.Core.CoreWebView2WebResourceRequestedEventArgs args)
-        {
-            var deferral = args.GetDeferral();
-            var uri = new Uri(args.Request.Uri);
-
-            await Task.Yield();
-
-            try
-            {
-
-                switch (uri.AbsolutePath)
-                {
-                    case "/_appservice/state":
-                        await HandleStateRequestAsync(sender, args);
-                        break;
-                    case "/_appservice/toast":
-                        await HandleToastNotificationAsync(sender, args);
-                        break;
-                    case "/_appservice/strings":
-                        await HandleStringRequestAsync(sender, args);
-                        break;
-                    case "/_appservice/barcodescan":
-                        await HandleBarcodeScanRequestAsync(sender, args);
-                        break;
-                    default:
-                        break;
-                }
-
-            }
-            finally
-            {
-                deferral.Complete();
-                deferral.Dispose();
-            }
-
-
-        }
-
-        private async Task HandleBarcodeScanRequestAsync(CoreWebView2 sender, CoreWebView2WebResourceRequestedEventArgs args)
-        {
-            var barcode = await ScanBarcodeAsync();
-
-            if (null == barcode)
-            {
-                args.Response = sender.Environment.CreateWebResourceResponse(null, 204, "NO CONTENT", "Content-Type: application/json");
-            }
-            else
-            {
-                var stream = new MemoryStream(Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(barcode)));
-                args.Response = sender.Environment.CreateWebResourceResponse(stream.AsRandomAccessStream(), 200, "OK", "Content-Type: application/json");
-            }
-           
-        }
-
-        private Task HandleStringRequestAsync(CoreWebView2 sender, CoreWebView2WebResourceRequestedEventArgs args)
-        {
-            var localization = ApplicationServiceContext.GetService<ILocalizationService>();
-
-            var uri = new Uri(args.Request.Uri);
-            //TODO: Locale
-            var locale = "en";
-
-            var strings = localization?.GetStrings(locale)?.ToDictionaryIgnoringDuplicates(k => k.Key, v => v.Value);
-
-            var stream = new MemoryStream(Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(strings)));
-            args.Response = sender.Environment.CreateWebResourceResponse(stream.AsRandomAccessStream(), 200, "OK", "Content-Type: application/json");
-
-            return Task.CompletedTask;
-        }
-
-        private Task HandleToastNotificationAsync(CoreWebView2 sender, CoreWebView2WebResourceRequestedEventArgs args)
-        {
-            try
-            {
-                using var requeststream = args.Request.Content.AsStreamForRead();
-
-                using var sr = new StreamReader(requeststream);
-                using var jtr = new JsonTextReader(sr);
-
-                var toastrequest = m_JsonSerializer.Deserialize<ToastRequest>(jtr);
-
-                args.Response = sender.Environment.CreateWebResourceResponse(null, 204, "NO CONTENT", "Content-Length: 0");
-
-                if (null != toastrequest)
-                {
-
-                    var notificationbuilder = new AppNotificationBuilder()
-                        //.SetScenario(AppNotificationScenario.Default)
-                        //.SetTimeStamp(DateTimeOffset.Now)
-                        //.AddButton(new AppNotificationButton("Dismiss")
-                        //{
-                        //    ButtonStyle = AppNotificationButtonStyle.Default
-                        //})
-                        ;
-
-                    if (!string.IsNullOrEmpty(toastrequest.Text))
-                    {
-                        notificationbuilder.AddText(toastrequest.Text);
-                    }
-
-                    var notification = notificationbuilder.BuildNotification();
-
-                    AppNotificationManager.Default.Show(notification);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debugger.Break();
-            }
-
-            return Task.CompletedTask;
-        }
-
-        private Task HandleStateRequestAsync(CoreWebView2 sender, CoreWebView2WebResourceRequestedEventArgs args)
-        {
-            var config = ApplicationServiceContext.GetService<IConfigurationManager>()?.GetSection<UpstreamConfigurationSection>();
-
-            var devicecredential = config?.Credentials?.FirstOrDefault(c => c.CredentialType == UpstreamCredentialType.Device);
-            var appcredential = config?.Credentials?.FirstOrDefault(c => c.CredentialType == UpstreamCredentialType.Application);
-
-            var response = new Shared.AppServiceStateResponse
-            {
-                Version = GetAssemblyVersion(),
-                Online = ApplicationServiceContext.IsRunning,
-                Hdsi = ApplicationServiceContext.IsRunning,
-                Ami = ApplicationServiceContext.IsRunning,
-                ClientId = appcredential?.CredentialName,
-                DeviceId = devicecredential?.CredentialName,
-                Magic = ApplicationServiceContext.ActivityUuid.ToString(),
-                Realm = config?.Realm?.DomainName
-            };
-
-            var stream = new MemoryStream(Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(response)));
-            args.Response = sender.Environment.CreateWebResourceResponse(stream.AsRandomAccessStream(), 200, "OK", "Content-Type: application/json");
-
-            return Task.CompletedTask;
-        }
-
 
         private string? _Version;
 
@@ -671,19 +492,15 @@ namespace SanteDB.Client.WinUI
         private string? GetAboutDialogTitle()
             => "About SanteDB for Windows®️";
 
-        private async void Browser_NavigationCompleted(WebView2 sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs args)
+        private void Browser_NavigationCompleted(WebView2 sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs args)
         {
             if (m_FirstRender)
             {
                 SplashStack.Visibility = Visibility.Collapsed;
                 Browser.Visibility = Visibility.Visible;
                 Browser.Focus(FocusState.Keyboard);
+                m_FirstRender = false;
             }
-        }
-
-        private void Browser_NavigationStarting(WebView2 sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs args)
-        {
-
         }
 
         private void BackgroundOperationsButton_Click(object sender, RoutedEventArgs e)
@@ -693,9 +510,7 @@ namespace SanteDB.Client.WinUI
 
         private async void AboutButton_Click(object sender, RoutedEventArgs e)
         {
-
             await AboutDialog.ShowAsync();
-
         }
 
         private Flyout GetBackgroundTaskFlyout()
@@ -848,7 +663,8 @@ namespace SanteDB.Client.WinUI
         {
             if (this.DispatcherQueue.HasThreadAccess)
             {
-                m_Magic = magicValue;
+                Browser.ApplicationServiceContext = ApplicationServiceContext;
+                Browser.SanteDBMagic = magicValue;
                 Browser.Source = new Uri(uri);
                 m_IsStarted = true;
             }
@@ -858,7 +674,8 @@ namespace SanteDB.Client.WinUI
                 var m = magicValue;
                 this.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
                 {
-                    m_Magic = m;
+                    Browser.ApplicationServiceContext = ApplicationServiceContext;
+                    Browser.SanteDBMagic = m;
                     Browser.Source = u;
                     m_IsStarted = true;
                 });

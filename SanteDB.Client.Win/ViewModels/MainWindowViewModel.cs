@@ -29,6 +29,7 @@ using Vanara.Extensions.Reflection;
 
 namespace SanteDB.Client.Win.ViewModels
 {
+
     internal partial class MainWindowViewModel : ObservableObject
     {
         public ObservableCollection<BackgroundTaskStatus> BackgroundTasks { get; } = new();
@@ -37,18 +38,19 @@ namespace SanteDB.Client.Win.ViewModels
         /// Gets or sets the title of the main window.
         /// </summary>
         [ObservableProperty, NotifyPropertyChangedFor(nameof(WindowTitle))]
-        string? title;
+        public partial string? Title { get; set; }
 
         /// <summary>
         /// Gets or sets the URL that the browser's source is set to.
         /// </summary>
         [ObservableProperty, NotifyPropertyChangedFor(nameof(DisplayBrowser))]
-        string? browserUrl;
+        public partial string? BrowserUrl { get; set; }
+
         /// <summary>
         /// Gets or sets the magic value used in the user agent string to authenticate the browser session.
         /// </summary>
         [ObservableProperty, NotifyPropertyChangedFor(nameof(UserAgentString))]
-        string? browserMagic;
+        public partial string? BrowserMagic { get; set; }
 
         /// <summary>
         /// Gets a value to indicate whether the browser should be shown (i.e. the startup sequence is complete)
@@ -82,37 +84,38 @@ namespace SanteDB.Client.Win.ViewModels
         [RelayCommand(CanExecute = nameof(CanGoBack))]
         private void GoBack()
         {
-            Browser.GoBack();
+            Browser?.GoBack();
         }
 
         [ObservableProperty, NotifyCanExecuteChangedFor(nameof(GoBackCommand))]
-        bool canGoBack = false;
+        public partial bool CanGoBack { get; set; } = false;
+        //bool canGoBack = false;
 
 
 
         [RelayCommand(CanExecute = nameof(CanGoForward))]
         private void GoForward()
         {
-            Browser.GoForward();
+            Browser?.GoForward();
         }
 
         [ObservableProperty, NotifyCanExecuteChangedFor(nameof(GoForwardCommand))]
-        bool canGoForward = false;
+        public partial bool CanGoForward { get; set; } = false;
 
         [RelayCommand(CanExecute = nameof(CanRefreshPage))]
         private void RefreshPage()
         {
-            Browser.Reload();
+            Browser?.Reload();
         }
 
         [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RefreshPageCommand))]
-        bool canRefreshPage = false;
+        public partial bool CanRefreshPage { get; set; } = false;
 
         [ObservableProperty]
-        string backgroundTasksButtonText;
+        public partial string? BackgroundTasksButtonText { get; set; }
 
-        internal MainWindow MainWindow { get; set; }
-        internal WebView2 Browser { get; set; }
+        internal MainWindow? MainWindow { get; set; }
+        internal Controls.SanteDBWebView2? Browser { get; set; }
 
         public MainWindowViewModel()
         {
@@ -134,7 +137,7 @@ namespace SanteDB.Client.Win.ViewModels
                 BackgroundTasksButtonText = $"{BackgroundTasks.Count} Pending Operations";
             }
 
-            MainWindow.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.High, () => MainWindow.SetDragRegionForCustomTitleBar());
+            MainWindow?.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.High, () => MainWindow.SetDragRegionForCustomTitleBar());
         }
     }
 }

@@ -109,7 +109,7 @@
                 <TextBlock x:Name="SplashStatusText" HorizontalAlignment="Center" MaxWidth="600" TextWrapping="Wrap"></TextBlock>
                 <ProgressRing IsActive="True" x:Name="StartupProgress" />
             </StackPanel>
-            <WebView2 x:Name="Browser" CoreWebView2Initialized="Browser_CoreWebView2Initialized" TabIndex="1" Visibility="Collapsed"></WebView2>
+            <lc:SanteDBWebView2 x:Name="Browser" CoreWebView2Initialized="Browser_CoreWebView2Initialized" TabIndex="1" Visibility="Collapsed"></lc:SanteDBWebView2>
         </Grid>
         <ContentDialog x:Name="AboutDialog" Title="{x:Bind GetAboutDialogTitle()}" IsPrimaryButtonEnabled="True" DefaultButton="Primary" PrimaryButtonText="Close">
             <StackPanel Orientation="Vertical" Spacing="5">

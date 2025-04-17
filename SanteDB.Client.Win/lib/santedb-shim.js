@@ -192,6 +192,24 @@ __SanteDBAppService.GetDeviceId = function () {
     }
 }
 
+__SanteDBAppService.GetAssignedFacilityId = function () {
+    if (__SanteDBAppService && __SanteDBAppService._state) {
+        return __SanteDBAppService._state.facility_id;
+    }
+    else {
+        return null;
+    }
+}
+
+__SanteDBAppService.GetAssignedOwnerId = function () {
+    if (__SanteDBAppService && __SanteDBAppService._state) {
+        return __SanteDBAppService._state.owner_id;
+    }
+    else {
+        return null;
+    }
+}
+
 __SanteDBAppService.GetRealm = function () {
     if (__SanteDBAppService && __SanteDBAppService._state) {
         return __SanteDBAppService._state.realm;
