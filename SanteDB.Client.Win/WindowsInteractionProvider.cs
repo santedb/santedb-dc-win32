@@ -48,12 +48,14 @@ namespace SanteDB.Client.WinUI
 
         public bool Confirm(string message)
         {
-            throw new NotSupportedException("Synchronous UI operations are not supported.");
+            return false;
+            //throw new NotSupportedException("Synchronous UI operations are not supported.");
         }
 
         public string Prompt(string message, bool maskEntry = false)
         {
-            throw new NotSupportedException("Synchronous UI operations are not supported.");
+            return null;
+            //throw new NotSupportedException("Synchronous UI operations are not supported.");
         }
 
         public void SetStatus(string statusText, float progressIndicator)

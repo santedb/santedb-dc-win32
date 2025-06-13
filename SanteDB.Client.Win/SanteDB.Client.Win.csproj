@@ -91,9 +91,6 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Content Update="applets\org.santedb.admin.pak">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Update="applets\org.santedb.bicore.pak">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

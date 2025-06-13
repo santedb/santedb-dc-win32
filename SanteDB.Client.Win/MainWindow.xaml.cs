@@ -342,7 +342,7 @@ namespace SanteDB.Client.WinUI
         /// </summary>
         internal void SetDragRegionForCustomTitleBar()
         {
-            if (AppWindowTitleBar.IsCustomizationSupported() && AppWindow.TitleBar.ExtendsContentIntoTitleBar)
+            if (AppWindowTitleBar.IsCustomizationSupported() && (AppWindow?.TitleBar?.ExtendsContentIntoTitleBar ?? false))
             {
                 var scalingfactor = GetScalingFactor();
 

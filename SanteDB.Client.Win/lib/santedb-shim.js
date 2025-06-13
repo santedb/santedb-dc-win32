@@ -176,10 +176,17 @@ __SanteDBAppService.ShowToast = function (text) {
 
 __SanteDBAppService.GetClientId = function () {
     if (__SanteDBAppService && __SanteDBAppService._state) {
-        return __SanteDBAppService._state.client_id;
+        let clientId = __SanteDBAppService._state.client_id;
+
+        if (null === clientId) {
+            return undefined;
+        }
+        else {
+            return __SanteDBAppService._state.client_id;
+        }
     }
     else {
-        return null;
+        return undefined;
     }
 };
 
