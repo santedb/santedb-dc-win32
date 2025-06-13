@@ -1,0 +1,31 @@
+﻿<Project ToolsVersion="15.0" Sdk="Microsoft.Build.NoTargets/3.7.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <TargetFramework>net7.0-windows10.0.19041.0</TargetFramework>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SanteDB.Client.Win\SanteDB.Client.Win.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="santedb-dc-win32.iss" />
+  </ItemGroup>
+  <UsingTask TaskName="Test" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Inputs ParameterType="Microsoft.Build.Framework.ITaskItem[]" />
+      <TestValue ParameterType="System.String" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+          Console.WriteLine(TestValue);
+          foreach(var file in Inputs)
+          {
+            Console.WriteLine(file.ToString());
+          }
+        ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="_Run" BeforeTargets="PrepareForRun">
+    <Test Inputs="@(Content)" TestValue="It worked." />
+  </Target>
+</Project>

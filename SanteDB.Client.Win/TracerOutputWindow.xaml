@@ -1,0 +1,17 @@
+<!-- Copyright (c) Microsoft Corporation and Contributors. -->
+<!-- Licensed under the MIT License. -->
+
+<Window
+    x:Class="SanteDB.Client.Win.TracerOutputWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:SanteDB.Client.Win"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <ScrollViewer VerticalScrollMode="Enabled" HorizontalScrollMode="Enabled" x:Name="ScrollViewer" Margin="8">
+        <RichTextBlock x:Name="TextBlock" x:FieldModifier="Public">
+        
+        </RichTextBlock>
+    </ScrollViewer>
+</Window>
