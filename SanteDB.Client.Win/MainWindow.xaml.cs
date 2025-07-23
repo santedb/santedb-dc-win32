@@ -682,18 +682,21 @@ namespace SanteDB.Client.WinUI
             }
         }
 
-        public async void ShowAlert(string message)
+        public async void ShowAlert(string message, string title = "Alert")
         {
             if (this.DispatcherQueue.HasThreadAccess)
             {
+                AlertDialog.Title = title;
                 AlertDialogText.Text = message;
                 await AlertDialog.ShowAsync();
             }
             else
             {
                 var m = message;
+                var t = title;
                 this.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, async () =>
                 {
+                    AlertDialog.Title = t;
                     AlertDialogText.Text = m;
                     await AlertDialog.ShowAsync();
                 });

@@ -118,7 +118,7 @@
             </StackPanel>
         </ContentDialog>
         <ContentDialog x:Name="AlertDialog" Title="Alert" IsPrimaryButtonEnabled="True" DefaultButton="Primary" PrimaryButtonText="Ok">
-            <TextBlock x:Name="AlertDialogText"></TextBlock>
+            <TextBlock x:Name="AlertDialogText" TextWrapping="Wrap"></TextBlock>
         </ContentDialog>
         <Popup x:Name="BarcodeScannerPopup" IsLightDismissEnabled="True" LightDismissOverlayMode="Auto" ShouldConstrainToRootBounds="False" HorizontalAlignment="Center" HorizontalOffset="-300" VerticalOffset="48">
             <Popup.SystemBackdrop>

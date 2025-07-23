@@ -62,6 +62,10 @@ using SanteDB.Client.Batteries.Services;
 using SanteDB.BusinessRules.JavaScript;
 using SanteDB.Security.Certs.BouncyCastle;
 using SanteDB.Client.Disconnected.Services;
+using SanteDB.Client.Services;
+using SanteDB.Client.UserInterface;
+using SanteDB.Core.Services;
+using System.Linq.Expressions;
 
 namespace SanteDB.Client.Win.Configuration
 {
@@ -80,66 +84,38 @@ namespace SanteDB.Client.Win.Configuration
                 throw new ApplicationException("Application bug exists. DataDirectory was not set before configuration provider was called. Ensure the DataDirectory data variable in the app domain is set before the config provider is initialized.");
             }
 
-            appServiceSection.ServiceProviders.AddRange(new List<TypeReferenceConfiguration>() {
-                    new TypeReferenceConfiguration(typeof(AesSymmetricCrypographicProvider)),
-                    new TypeReferenceConfiguration(typeof(InMemoryTickleService)),
-                    new TypeReferenceConfiguration(typeof(DefaultNetworkInformationService)),
-                    new TypeReferenceConfiguration(typeof(SHA256PasswordHashingService)),
-                    new TypeReferenceConfiguration(typeof(DefaultPolicyDecisionService)),
-                    new TypeReferenceConfiguration(typeof(MemoryAdhocCacheService)),
-                    new TypeReferenceConfiguration(typeof(AppletLocalizationService)),
-                    new TypeReferenceConfiguration(typeof(AppletBusinessRulesDaemon)),
-                    new TypeReferenceConfiguration(typeof(DefaultUpstreamManagementService)),
-                    new TypeReferenceConfiguration(typeof(DefaultUpstreamIntegrationService)),
-                    new TypeReferenceConfiguration(typeof(DefaultUpstreamAvailabilityProvider)),
-                    new TypeReferenceConfiguration(typeof(MemoryCacheService)),
-                    new TypeReferenceConfiguration(typeof(DefaultThreadPoolService)),
-                    //new TypeReferenceConfiguration(typeof(ConsoleUserInterfaceInteractionProvider)),
-                    new TypeReferenceConfiguration(typeof(MemoryQueryPersistenceService)),
-                    new TypeReferenceConfiguration(typeof(FileSystemDispatcherQueueService)),
-                    new TypeReferenceConfiguration(typeof(SimplePatchService)),
-                    new TypeReferenceConfiguration(typeof(DefaultBackupManager)),
-                    new TypeReferenceConfiguration(typeof(AppletBiRepository)),
-                    new TypeReferenceConfiguration(typeof(OAuthClient)),
-                    new TypeReferenceConfiguration(typeof(MemorySessionManagerService)),
-                    new TypeReferenceConfiguration(typeof(UpstreamUpdateManagerService)), // AmiUpdateManager
-                    new TypeReferenceConfiguration(typeof(UpstreamIdentityProvider)),
-                    new TypeReferenceConfiguration(typeof(UpstreamApplicationIdentityProvider)),
-                    new TypeReferenceConfiguration(typeof(UpstreamSecurityChallengeProvider)), // AmiSecurityChallengeProvider
-                    new TypeReferenceConfiguration(typeof(UpstreamRoleProviderService)),
-                    new TypeReferenceConfiguration(typeof(UpstreamSecurityRepository)),
-                    new TypeReferenceConfiguration(typeof(UpstreamRepositoryFactory)),
-                    new TypeReferenceConfiguration(typeof(UpstreamPolicyInformationService)),
-                    new TypeReferenceConfiguration(typeof(DataPolicyFilterService)),
-                    //new TypeReferenceConfiguration(typeof(DefaultOperatingSystemInfoService)),
-                    new TypeReferenceConfiguration(typeof(AppletSubscriptionRepository)),
-                    new TypeReferenceConfiguration(typeof(InMemoryPivotProvider)),
-                    new TypeReferenceConfiguration(typeof(AuditDaemonService)),
-                    new TypeReferenceConfiguration(typeof(DefaultDataSigningService)),
-                    new TypeReferenceConfiguration(typeof(DefaultBarcodeProviderService)),
-                    new TypeReferenceConfiguration(typeof(FileSystemDispatcherQueueService)),
-                    new TypeReferenceConfiguration(typeof(BouncyCastleCertificateGenerator)),
-                    new TypeReferenceConfiguration(typeof(RepositoryEntitySource)),
-                    new TypeReferenceConfiguration(typeof(FileSystemCdssLibraryRepository)),
+            appServiceSection.RemoveAllServiceImplementations(typeof(IAppletHostBridgeProvider));
+            appServiceSection.RemoveAllServiceImplementations(typeof(IUserInterfaceInteractionProvider));
+            appServiceSection.RemoveAllServiceImplementations(typeof(IGeographicLocationProvider));
+            appServiceSection.RemoveAllServiceImplementations(typeof(IOperatingSystemInfoService));
+
+            //appServiceSection.AllowUnsignedAssemblies = true;
+
+            appServiceSection.AddServices(new[]
+            {
+                new TypeReferenceConfiguration(typeof(WindowsBridgeProvider)),
+                new TypeReferenceConfiguration(typeof(WindowsInteractionProvider)),
+                new TypeReferenceConfiguration(typeof(WindowsLocationProvider)),
+                new TypeReferenceConfiguration(typeof(WindowsOperatingSystemInfoService))
             });
 
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("input.name", "simple"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("input.address", "text"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("optional.patient.address.city", "true"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("optional.patient.address.county", "true"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("optional.patient.address.state", "false"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("optional.patient.name.family", "false"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("optional.patient.address.given", "false"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.address.state", "false"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.address.county", "true"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.address.city", "false"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.address.precinct", "true"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.name.prefix", "true"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.name.suffix", "true"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.name.family", "false"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.name.given", "false"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("allow.patient.religion", "false"));
-            appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("allow.patient.ethnicity", "false"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("input.name", "simple"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("input.address", "text"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("optional.patient.address.city", "true"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("optional.patient.address.county", "true"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("optional.patient.address.state", "false"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("optional.patient.name.family", "false"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("optional.patient.address.given", "false"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.address.state", "false"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.address.county", "true"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.address.city", "false"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.address.precinct", "true"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.name.prefix", "true"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.name.suffix", "true"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.name.family", "false"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("forbid.patient.name.given", "false"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("allow.patient.religion", "false"));
+            //appServiceSection.AppSettings.Add(new AppSettingKeyValuePair("allow.patient.ethnicity", "false"));
             //appServiceSection.AppSettings = appServiceSection.AppSettings.OrderBy(o => o.Key).ToList();
             appServiceSection.AppSettings.Sort((a, b) => string.Compare(a?.Key, b?.Key));
 
@@ -160,7 +136,11 @@ namespace SanteDB.Client.Win.Configuration
                 {
                     new UpstreamCredentialConfiguration()
                     {
+#if DEBUG
                         CredentialName = $"Debugee-{macAddress.Replace(" ", "")}",
+#else
+                        CredentialName = Environment.MachineName,
+#endif
                         Conveyance = UpstreamCredentialConveyance.Secret,
                         CredentialType = UpstreamCredentialType.Device
                     },
@@ -174,27 +154,22 @@ namespace SanteDB.Client.Win.Configuration
                 }
             };
 
+            configuration.Sections.Add(upstreamConfiguration);
 
+            var backupConfiguration = configuration.GetSection<BackupConfigurationSection>();
 
-            configuration.AddSection(new SecurityConfigurationSection()
+            if (null == backupConfiguration)
             {
-                PasswordRegex = @"^(?=.*\d){1,}(?=.*[a-z]){1,}(?=.*[A-Z]){1,}(?=.*[^\w\d]){1,}.{6,}$",
-                SecurityPolicy = new List<SecurityPolicyConfiguration>()
+                backupConfiguration = new BackupConfigurationSection()
                 {
-                    new SecurityPolicyConfiguration(SecurityPolicyIdentification.SessionLength, new TimeSpan(0,30,0)),
-                    new SecurityPolicyConfiguration(SecurityPolicyIdentification.RefreshLength, new TimeSpan(0,35,0))
-                },
-                Signatures = new List<SanteDB.Core.Security.Configuration.SecuritySignatureConfiguration>()
-                {
-                    new SanteDB.Core.Security.Configuration.SecuritySignatureConfiguration()
-                    {
-                        KeyName ="default",
-                        Algorithm = SanteDB.Core.Security.Configuration.SignatureAlgorithm.HS256,
-                        HmacSecret = "QUFCN0ZDQjk2ODU1MDkwODIzNTIxREM2OEIxRTA5RDgzMUQ3MkY1RTk2MzAzNzRCMjU0ODdBMUFCQzUzRDAzMjYyMjQ1REE0RDA1MUMyRkMzOEVGMkNCMjBCM0FDQzRBRjE2MTdEQzUwQ0U4NDJGOUFFOEIzMjQzRTQ2MUNCMTE="
-                    }
-                }
-            });
-            // Trace writer
+                    RequireEncryptedBackups = true,
+                };
+                configuration.AddSection(backupConfiguration);
+            }
+
+            backupConfiguration.PrivateBackupLocation = Path.Combine(localDataPath, "backup");
+            backupConfiguration.PublicBackupLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "SanteDB", "Backups");
+
 
             var logDirectory = Path.Combine(localDataPath, "log");
 
@@ -243,64 +218,64 @@ namespace SanteDB.Client.Win.Configuration
 #endif
 
             // Setup the tracers 
-            diagSection.TraceWriter.ForEach(o => Tracer.AddWriter(Activator.CreateInstance(o.TraceWriter, o.Filter, o.InitializationData, null) as TraceWriter, o.Filter));
-            configuration.Sections.Add(new FileSystemDispatcherQueueConfigurationSection()
-            {
-                QueuePath = Path.Combine(localDataPath, "queue"),
-            });
+            //diagSection.TraceWriter.ForEach(o => Tracer.AddWriter(Activator.CreateInstance(o.TraceWriter, o.Filter, o.InitializationData, null) as TraceWriter, o.Filter));
+            //configuration.Sections.Add(new FileSystemDispatcherQueueConfigurationSection()
+            //{
+            //    QueuePath = Path.Combine(localDataPath, "queue"),
+            //});
 
-            var backupSection = new BackupConfigurationSection()
-            {
-                PrivateBackupLocation = Path.Combine(localDataPath, "backup"),
-                PublicBackupLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "santedb", "dc-win32", "backup") /* we use lowercase santedb in case we are on a case-sensitive file system */
-            };
+            //var backupSection = new BackupConfigurationSection()
+            //{
+            //    PrivateBackupLocation = Path.Combine(localDataPath, "backup"),
+            //    PublicBackupLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "santedb", "dc-win32", "backup") /* we use lowercase santedb in case we are on a case-sensitive file system */
+            //};
 
-            configuration.Sections.Add(new RestClientConfigurationSection()
-            {
-                RestClientType = new TypeReferenceConfiguration(typeof(RestClient))
-            });
-            configuration.Sections.Add(new OAuthConfigurationSection()
-            {
-                IssuerName = upstreamConfiguration.Credentials[0].CredentialName,
-                AllowClientOnlyGrant = false,
-                JwtSigningKey = "jwsdefault",
-                TokenType = "bearer"
-            });
-            configuration.Sections.Add(new ClientConfigurationSection()
-            {
-                AutoUpdateApplets = true
-            });
-            configuration.Sections.Add(diagSection);
-            configuration.Sections.Add(upstreamConfiguration);
-            configuration.Sections.Add(new AuditAccountabilityConfigurationSection()
-            {
-                AuditFilters = new List<AuditFilterConfiguration>()
-                {
-                    // Audit any failure - No matter which event
-                    new AuditFilterConfiguration(null, null, OutcomeIndicator.EpicFail | OutcomeIndicator.MinorFail | OutcomeIndicator.SeriousFail, true, true),
-                    // Audit anything that creates, reads, or updates data
-                    new AuditFilterConfiguration(ActionType.Create | ActionType.Read | ActionType.Update | ActionType.Delete, null, null, true, true)
-                }
-            });
-            configuration.Sections.Add(new SynchronizationConfigurationSection()
-            {
-                Mode = SynchronizationMode.Partial,
-                PollInterval = new TimeSpan(0, 15, 0),
-                ForbidSending = new List<ResourceTypeReferenceConfiguration>()
-                {
-                    new ResourceTypeReferenceConfiguration(typeof(DeviceEntity)),
-                    new ResourceTypeReferenceConfiguration(typeof(ApplicationEntity)),
-                    new ResourceTypeReferenceConfiguration(typeof(Concept)),
-                    new ResourceTypeReferenceConfiguration(typeof(ConceptSet)),
-                    new ResourceTypeReferenceConfiguration(typeof(Place)),
-                    new ResourceTypeReferenceConfiguration(typeof(ReferenceTerm)),
-                    new ResourceTypeReferenceConfiguration(typeof(AssigningAuthority)),
-                    new ResourceTypeReferenceConfiguration(typeof(UserEntity)),
-                    new ResourceTypeReferenceConfiguration(typeof(SecurityUser)),
-                    new ResourceTypeReferenceConfiguration(typeof(SecurityDevice)),
-                    new ResourceTypeReferenceConfiguration(typeof(SecurityApplication))
-                }
-            });
+            //configuration.Sections.Add(new RestClientConfigurationSection()
+            //{
+            //    RestClientType = new TypeReferenceConfiguration(typeof(RestClient))
+            //});
+            //configuration.Sections.Add(new OAuthConfigurationSection()
+            //{
+            //    IssuerName = upstreamConfiguration.Credentials[0].CredentialName,
+            //    AllowClientOnlyGrant = false,
+            //    JwtSigningKey = "jwsdefault",
+            //    TokenType = "bearer"
+            //});
+            //configuration.Sections.Add(new ClientConfigurationSection()
+            //{
+            //    AutoUpdateApplets = true
+            //});
+            //configuration.Sections.Add(diagSection);
+            
+            //configuration.Sections.Add(new AuditAccountabilityConfigurationSection()
+            //{
+            //    AuditFilters = new List<AuditFilterConfiguration>()
+            //    {
+            //        // Audit any failure - No matter which event
+            //        new AuditFilterConfiguration(null, null, OutcomeIndicator.EpicFail | OutcomeIndicator.MinorFail | OutcomeIndicator.SeriousFail, true, true),
+            //        // Audit anything that creates, reads, or updates data
+            //        new AuditFilterConfiguration(ActionType.Create | ActionType.Read | ActionType.Update | ActionType.Delete, null, null, true, true)
+            //    }
+            //});
+            //configuration.Sections.Add(new SynchronizationConfigurationSection()
+            //{
+            //    Mode = SynchronizationMode.Partial,
+            //    PollInterval = new TimeSpan(0, 15, 0),
+            //    ForbidSending = new List<ResourceTypeReferenceConfiguration>()
+            //    {
+            //        new ResourceTypeReferenceConfiguration(typeof(DeviceEntity)),
+            //        new ResourceTypeReferenceConfiguration(typeof(ApplicationEntity)),
+            //        new ResourceTypeReferenceConfiguration(typeof(Concept)),
+            //        new ResourceTypeReferenceConfiguration(typeof(ConceptSet)),
+            //        new ResourceTypeReferenceConfiguration(typeof(Place)),
+            //        new ResourceTypeReferenceConfiguration(typeof(ReferenceTerm)),
+            //        new ResourceTypeReferenceConfiguration(typeof(AssigningAuthority)),
+            //        new ResourceTypeReferenceConfiguration(typeof(UserEntity)),
+            //        new ResourceTypeReferenceConfiguration(typeof(SecurityUser)),
+            //        new ResourceTypeReferenceConfiguration(typeof(SecurityDevice)),
+            //        new ResourceTypeReferenceConfiguration(typeof(SecurityApplication))
+            //    }
+            //});
 
             return configuration;
         }
