@@ -18,6 +18,8 @@
  * User: trevor
  * Date: 2023-4-19
  */
+using CommunityToolkit.WinUI;
+using DocumentFormat.OpenXml.Vml;
 using Microsoft.UI;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
@@ -28,6 +30,7 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Cms;
 using SanteDB.Client.Configuration.Upstream;
 using SanteDB.Client.Win;
 using SanteDB.Client.Win.ViewModels;
@@ -46,6 +49,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Vanara.PInvoke;
 using Windows.Graphics;
+using Windows.Media.Core;
 using Windows.UI.ViewManagement;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -448,12 +452,52 @@ namespace SanteDB.Client.WinUI
             Browser.CoreWebView2.HistoryChanged += CoreWebView2_HistoryChanged;
             Browser.NavigationCompleted += Browser_NavigationCompleted;
             Browser.CoreWebView2.DocumentTitleChanged += CoreWebView2_DocumentTitleChanged;
+            Browser.CoreWebView2.ScriptDialogOpening += CoreWebView2_ScriptDialogOpening;
 
             ViewModel.CanRefreshPage = true;
+
+            Browser.CoreWebView2.Settings.AreDefaultScriptDialogsEnabled = false;
+            Browser.CoreWebView2.Settings.IsReputationCheckingRequired = false;
 
 #if DEBUG
             Browser.CoreWebView2.OpenDevToolsWindow();
 #endif
+        }
+
+        private async void CoreWebView2_ScriptDialogOpening(CoreWebView2 sender, CoreWebView2ScriptDialogOpeningEventArgs args)
+        {
+            using var deferral = args.GetDeferral();
+
+            try
+            {
+                switch (args.Kind)
+                {
+                    case CoreWebView2ScriptDialogKind.Alert:
+                        await ShowAlertAsync(args.Message);
+                        break;
+                    case CoreWebView2ScriptDialogKind.Beforeunload:
+                    case CoreWebView2ScriptDialogKind.Confirm:
+                        var confirmresult = await ShowConfirmAsync(args.Message);
+
+                        if (confirmresult)
+                            args.Accept();
+
+                        break;
+                    case CoreWebView2ScriptDialogKind.Prompt:
+                        var promptresult = await ShowPromptAsync(args.Message, args.DefaultText);
+                        args.ResultText = promptresult;
+                        if (null !=  args.ResultText)
+                            args.Accept();
+
+                        break;
+                    default:
+                        throw new ArgumentException($"Kind of dialog was unexpected: {args.Kind.ToString()}");
+                }
+            }
+            finally
+            {
+                deferral.Complete();
+            }                
         }
 
         private void CoreWebView2_DocumentTitleChanged(CoreWebView2 sender, object args)
@@ -490,7 +534,7 @@ namespace SanteDB.Client.WinUI
         }
 
         private string? GetAboutDialogTitle()
-            => "About SanteDB for Windows®️";
+            => $"About {typeof(MainWindow).Assembly.GetCustomAttribute<AssemblyProductAttribute>()?.Product ?? "SanteDB for Windows®️"}";
 
         private void Browser_NavigationCompleted(WebView2 sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs args)
         {
@@ -561,7 +605,7 @@ namespace SanteDB.Client.WinUI
         {
             if (!m_IsStarted)
             {
-                if (null != text && taskIdentifier == nameof(DependencyServiceManager))
+                if (null != text)// && taskIdentifier == nameof(DependencyServiceManager))
                 {
                     ShowSplashStatusText(text!, progress);
                 }
@@ -682,7 +726,7 @@ namespace SanteDB.Client.WinUI
             }
         }
 
-        public async void ShowAlert(string message, string title = "Alert")
+        public async Task ShowAlertAsync(string message, string title = "Alert")
         {
             if (this.DispatcherQueue.HasThreadAccess)
             {
@@ -701,6 +745,84 @@ namespace SanteDB.Client.WinUI
                     await AlertDialog.ShowAsync();
                 });
             }
+        }
+
+        public async Task<bool> ShowConfirmAsync(string message, string title = "Confirm")
+        {
+            ContentDialogResult result;
+
+            if (this.DispatcherQueue.HasThreadAccess)
+            {
+                ConfirmDialog.Title = title;
+                ConfirmDialogText.Text = message;
+                result = await ConfirmDialog.ShowAsync();
+
+               
+            }
+            else
+            {
+                var m = message;
+                var t = title;
+
+                result = await this.DispatcherQueue.EnqueueAsync(async () =>
+                {
+                    ConfirmDialog.Title = t;
+                    ConfirmDialogText.Text = m;
+
+                    return await ConfirmDialog.ShowAsync();
+                });
+            }
+
+            return result == ContentDialogResult.Primary;
+        }
+        
+        public async Task<string?> ShowPromptAsync(string message, string? defaultValue = default, string title = "Prompt", bool maskInput = false)
+        {
+            ContentDialogResult result;
+            string resulttext;
+
+            if (this.DispatcherQueue.HasThreadAccess)
+            {
+                var dialog = maskInput ? PasswordDialog : PromptDialog;
+                var textblock = maskInput ? PasswordDialogText : PromptDialogText;
+                var textbox = maskInput ? PasswordDialogTextBox : PromptDialogTextBox;
+
+                dialog.Title = title;
+                textblock.Text = message;
+                textbox.Text = defaultValue ?? "";
+
+                result = await dialog.ShowAsync();
+
+                resulttext = textbox.Text;
+
+                textbox.Text = string.Empty;
+            }
+            else
+            {
+                var m = message; var t = title; var dv = defaultValue;
+
+                (result, resulttext) = await this.DispatcherQueue.EnqueueAsync(async () =>
+                {
+                    var dialog = maskInput ? PasswordDialog : PromptDialog;
+                    var textblock = maskInput ? PasswordDialogText : PromptDialogText;
+                    var textbox = maskInput ? PasswordDialogTextBox : PromptDialogTextBox;
+
+                    dialog.Title = title;
+                    textblock.Text = message;
+                    textbox.Text = defaultValue ?? "";
+
+                    var r = await dialog.ShowAsync();
+                    var rt = textbox.Text;
+
+                    textbox.Text = string.Empty;
+
+                    return (r, rt);
+                });
+            }
+
+            if (!(result == ContentDialogResult.Primary))
+                return null;
+            return resulttext;
         }
 
         private void Flyout_Opening(object? sender, object e)

@@ -43,19 +43,17 @@ namespace SanteDB.Client.WinUI
 
         public void Alert(string message)
         {
-            m_MainWindow.ShowAlert(message);
+            Nito.AsyncEx.AsyncContext.Run(async () => await m_MainWindow.ShowAlertAsync(message));
         }
 
         public bool Confirm(string message)
         {
-            return false;
-            //throw new NotSupportedException("Synchronous UI operations are not supported.");
+            return Nito.AsyncEx.AsyncContext.Run(() => m_MainWindow.ShowConfirmAsync(message));
         }
 
-        public string Prompt(string message, bool maskEntry = false)
+        public string? Prompt(string message, bool maskEntry = false)
         {
-            return null;
-            //throw new NotSupportedException("Synchronous UI operations are not supported.");
+            return Nito.AsyncEx.AsyncContext.Run(() => m_MainWindow.ShowPromptAsync(message, maskInput: maskEntry));
         }
 
         public void SetStatus(string statusText, float progressIndicator)

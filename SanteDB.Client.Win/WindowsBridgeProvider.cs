@@ -40,6 +40,10 @@ namespace SanteDB.Client.WinUI
                 using var sr = new StreamReader(stream);
                 _BridgeScript = sr.ReadToEnd();
             }
+            else
+            {
+                throw new ApplicationException("App configuration exception exists. Bridge script was not in the assembly.");
+            }
         }
 
         public string GetBridgeScript()

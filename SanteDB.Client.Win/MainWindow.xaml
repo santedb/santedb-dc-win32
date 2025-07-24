@@ -117,8 +117,23 @@
                 <TextBlock Text="{x:Bind GetAssemblyCopyright()}"></TextBlock>
             </StackPanel>
         </ContentDialog>
+        <ContentDialog x:Name="ConfirmDialog" Title="Confirm" IsPrimaryButtonEnabled="True" DefaultButton="Primary" PrimaryButtonText="Yes" SecondaryButtonText="No">
+            <TextBlock x:Name="ConfirmDialogText" TextWrapping="Wrap"></TextBlock>
+        </ContentDialog>
         <ContentDialog x:Name="AlertDialog" Title="Alert" IsPrimaryButtonEnabled="True" DefaultButton="Primary" PrimaryButtonText="Ok">
             <TextBlock x:Name="AlertDialogText" TextWrapping="Wrap"></TextBlock>
+        </ContentDialog>
+        <ContentDialog x:Name="PromptDialog" Title="Prompt" IsPrimaryButtonEnabled="True" DefaultButton="Primary" PrimaryButtonText="Ok" SecondaryButtonText="Cancel">
+            <StackPanel Orientation="Vertical" Spacing="10">
+                <TextBlock x:Name="PromptDialogText" TextWrapping="Wrap"></TextBlock>
+                <TextBox x:Name="PromptDialogTextBox"></TextBox>
+            </StackPanel>
+        </ContentDialog>
+        <ContentDialog x:Name="PasswordDialog" Title="Prompt" IsPrimaryButtonEnabled="True" DefaultButton="Primary" PrimaryButtonText="Ok" SecondaryButtonText="Cancel">
+            <StackPanel Orientation="Vertical" Spacing="10">
+                <TextBlock x:Name="PasswordDialogText" TextWrapping="Wrap"></TextBlock>
+                <TextBox x:Name="PasswordDialogTextBox"></TextBox>
+            </StackPanel>
         </ContentDialog>
         <Popup x:Name="BarcodeScannerPopup" IsLightDismissEnabled="True" LightDismissOverlayMode="Auto" ShouldConstrainToRootBounds="False" HorizontalAlignment="Center" HorizontalOffset="-300" VerticalOffset="48">
             <Popup.SystemBackdrop>

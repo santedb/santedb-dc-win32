@@ -184,7 +184,7 @@ namespace SanteDB.Client.WinUI
                 }
                 catch (Exception ex) when (!(ex is StackOverflowException || ex is OutOfMemoryException))
                 {
-                    m_window.ShowAlert(ex.Message, "Startup Exception");
+                    _ = m_window.ShowAlertAsync(ex.Message, "Startup Exception");
                 }
 
             });
