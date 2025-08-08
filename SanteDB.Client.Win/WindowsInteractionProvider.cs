@@ -68,5 +68,11 @@ namespace SanteDB.Client.WinUI
             //m_MainWindow.ShowSplashStatusText($"Starting SanteDB - {Math.Round(progressIndicator, 2)} :: {taskIdentifier}");
             m_MainWindow.SetStatus(taskIdentifier, statusText, progressIndicator);
         }
+
+        public string SelectFile(string title, string pattern, string path)
+        {
+
+            return string.Empty;
+        }
     }
 }
