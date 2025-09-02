@@ -61,18 +61,34 @@ namespace SanteDB.Client.WinUI
 
         public void SetStatus(string taskIdentifier, string statusText, float progressIndicator)
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine(statusText);
-#endif
-
             //m_MainWindow.ShowSplashStatusText($"Starting SanteDB - {Math.Round(progressIndicator, 2)} :: {taskIdentifier}");
             m_MainWindow.SetStatus(taskIdentifier, statusText, progressIndicator);
         }
 
         public string SelectFile(string title, string pattern, string path)
         {
+            var picker = new Windows.Storage.Pickers.FileOpenPicker();
 
-            return string.Empty;
+            picker.ViewMode = Windows.Storage.Pickers.PickerViewMode.List;
+            picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
+
+            if (!string.IsNullOrEmpty(pattern))
+            {
+                var patterns = pattern.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (var ptrn in patterns)
+                {
+                    if (ptrn.IndexOf('/') == -1)
+                        picker.FileTypeFilter.Add(ptrn);
+                }
+            }
+
+            var result = Nito.AsyncEx.AsyncContext.Run(async () => await picker.PickSingleFileAsync());
+
+            if (null != result?.Path)
+                return result.Path;
+            else
+                return string.Empty;
         }
     }
 }
