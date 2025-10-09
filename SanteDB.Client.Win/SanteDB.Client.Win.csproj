@@ -82,7 +82,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <TargetFramework>net9.0-windows10.0.22621.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
     <RootNamespace>SanteDB.Client.Win</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -102,7 +102,7 @@
   <PropertyGroup>
     <VersionNumber Condition="'$(VersionNumber)'==''">3.0-debug</VersionNumber>
     <Version>$(VersionNumber)</Version>
-    <AppletVersion Condition="'$(AppletVersion)'==''">3.0.2009</AppletVersion>
+    <AppletVersion Condition="'$(AppletVersion)'==''">3.0.2017</AppletVersion>
   </PropertyGroup>
 
   <!-- Applets to include in the build -->
