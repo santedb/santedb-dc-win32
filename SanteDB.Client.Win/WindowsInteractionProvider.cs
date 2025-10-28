@@ -18,10 +18,12 @@
  * User: trevor
  * Date: 2023-4-19
  */
+using SanteDB.Client.Upstream.Management;
 using SanteDB.Client.UserInterface;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -65,7 +67,9 @@ namespace SanteDB.Client.WinUI
             m_MainWindow.SetStatus(taskIdentifier, statusText, progressIndicator);
         }
 
-        public string SelectFile(string title, string pattern, string path)
+
+
+        public Stream SelectFile(string title, string pattern, string path)
         {
             var picker = new Windows.Storage.Pickers.FileOpenPicker();
 
@@ -83,12 +87,38 @@ namespace SanteDB.Client.WinUI
                 }
             }
 
-            var result = Nito.AsyncEx.AsyncContext.Run(async () => await picker.PickSingleFileAsync());
+            return Nito.AsyncEx.AsyncContext.Run(async () => {
+                var pickerResult = await picker.PickSingleFileAsync();
+                if (null != pickerResult?.Path)
+                {
+                    return (await pickerResult.OpenReadAsync())?.AsStreamForRead();
+                }
+                else
+                {
+                    return null;
+                }
+            });
 
-            if (null != result?.Path)
-                return result.Path;
-            else
-                return string.Empty;
+        }
+
+        /// <summary>
+        /// TODO: Clean this up and test
+        /// </summary>
+        public string SaveFile(string defaultPath, string defaultName, Stream fileContents)
+        {
+            var picker = new Windows.Storage.Pickers.FileSavePicker();
+            picker.SuggestedFileName = defaultName;
+            picker.DefaultFileExtension = Path.GetExtension(defaultName);
+
+            var result = Nito.AsyncEx.AsyncContext.Run(async () => await picker.PickSaveFileAsync());
+            if(!String.IsNullOrEmpty(result.Path))
+            {
+                using(var fs = new FileStream(result.Path, FileMode.Create))
+                {
+                    fileContents.CopyTo(fs);
+                }
+            }
+            return result.Path;
         }
     }
 }
