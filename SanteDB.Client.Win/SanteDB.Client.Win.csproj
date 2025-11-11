@@ -102,7 +102,7 @@
   <PropertyGroup>
     <VersionNumber Condition="'$(VersionNumber)'==''">3.0-debug</VersionNumber>
     <Version>$(VersionNumber)</Version>
-    <AppletVersion Condition="'$(AppletVersion)'==''">3.0.2017</AppletVersion>
+    <AppletVersion Condition="'$(AppletVersion)'==''">3.0.2026</AppletVersion>
   </PropertyGroup>
 
   <!-- Applets to include in the build -->
