@@ -97,7 +97,7 @@ namespace SanteDB.Client.WinUI
                 {
                     return null;
                 }
-            });
+            })!;
 
         }
 
