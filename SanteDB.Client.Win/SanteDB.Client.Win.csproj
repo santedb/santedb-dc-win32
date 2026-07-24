@@ -140,7 +140,7 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250401001" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
     <PackageReference Include="NETStandard.Library" Version="2.0.3" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.1" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
     <PackageReference Include="Vanara.PInvoke.ComCtl32" Version="4.1.1" />
     <PackageReference Include="Vanara.PInvoke.DwmApi" Version="4.1.1" />
     <PackageReference Include="Vanara.PInvoke.SHCore" Version="4.1.1" />
